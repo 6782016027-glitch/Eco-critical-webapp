@@ -1,0 +1,6 @@
+{
+  "name": "Eco-critical",
+  "description": "ห้องเรียนภูมิศาสตร์สิ่งแวดล้อม แหล่งรวบรวมกรณีศึกษามลพิษทางอากาศ ภาวะฝุ่น PM2.5 ในอดีตและปัจจุบัน พร้อม Eco bot ผู้ช่วยส่งเสริมการคิดวิพากษ์",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
