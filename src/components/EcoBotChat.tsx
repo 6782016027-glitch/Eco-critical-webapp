@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, Send, Sparkles, Volume2, VolumeX, Trash2, BookOpen, Scale, Lightbulb, AlertCircle } from 'lucide-react';
+import { Bot, Send, Sparkles, Volume2, VolumeX, Trash2, BookOpen, Scale, Lightbulb, AlertCircle, Key, Check, ExternalLink, X, ShieldCheck } from 'lucide-react';
 import { CASE_STUDIES, CaseStudy } from '../data/caseStudies';
+import { sendEcoBotMessage } from '../services/aiService';
 
 interface Message {
   role: 'user' | 'model';
@@ -31,6 +32,14 @@ export const EcoBotChat: React.FC<EcoBotChatProps> = ({
   const [selectedCase, setSelectedCase] = useState<CaseStudy | null>(initialCaseStudy || null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [customKey, setCustomKey] = useState<string>(() => {
+    return typeof window !== 'undefined' ? localStorage.getItem('ECO_GEMINI_API_KEY') || '' : '';
+  });
+  const [keyInput, setKeyInput] = useState<string>(() => {
+    return typeof window !== 'undefined' ? localStorage.getItem('ECO_GEMINI_API_KEY') || '' : '';
+  });
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -90,33 +99,24 @@ export const EcoBotChat: React.FC<EcoBotChatProps> = ({
     setErrorMsg(null);
 
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: text,
-          history: messages,
-          mode: chatMode,
-          caseStudyContext: selectedCase
-            ? {
-                title: selectedCase.titleTh,
-                period: selectedCase.period,
-                location: selectedCase.location,
-                summary: selectedCase.summary,
-                geography: selectedCase.geographyFactors.topography,
-              }
-            : null,
-        }),
+      const reply = await sendEcoBotMessage({
+        message: text,
+        history: messages,
+        mode: chatMode,
+        caseStudyContext: selectedCase
+          ? {
+              title: selectedCase.titleTh,
+              period: selectedCase.period,
+              location: selectedCase.location,
+              summary: selectedCase.summary,
+              geography: selectedCase.geographyFactors.topography,
+            }
+          : null,
       });
 
-      if (!response.ok) {
-        throw new Error('ระบบเซิร์ฟเวอร์ขัดข้อง ไม่สามารถประมวลผลคำตอบได้');
-      }
-
-      const data = await response.json();
       const botMsg: Message = {
         role: 'model',
-        content: data.reply || 'ขออภัยครับ ไม่สามารถสร้างคำตอบได้ในขณะนี้',
+        content: reply || 'ขออภัยครับ ไม่สามารถสร้างคำตอบได้ในขณะนี้',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
 
@@ -151,6 +151,29 @@ export const EcoBotChat: React.FC<EcoBotChatProps> = ({
 
     setIsSpeaking(true);
     window.speechSynthesis.speak(utterance);
+  };
+
+  const handleSaveKey = () => {
+    if (keyInput.trim()) {
+      localStorage.setItem('ECO_GEMINI_API_KEY', keyInput.trim());
+      setCustomKey(keyInput.trim());
+    } else {
+      localStorage.removeItem('ECO_GEMINI_API_KEY');
+      setCustomKey('');
+    }
+    setSaveSuccess(true);
+    setTimeout(() => {
+      setSaveSuccess(false);
+      setShowKeyModal(false);
+    }, 1200);
+  };
+
+  const handleClearKey = () => {
+    localStorage.removeItem('ECO_GEMINI_API_KEY');
+    setCustomKey('');
+    setKeyInput('');
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 1200);
   };
 
   const handleClearChat = () => {
@@ -192,14 +215,25 @@ export const EcoBotChat: React.FC<EcoBotChatProps> = ({
           </div>
         </div>
 
-        {/* Clear chat button */}
-        <button
-          onClick={handleClearChat}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-rose-50 text-slate-600 hover:text-rose-700 text-xs border border-slate-200 transition-colors"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-          <span>ล้างการสนทนา</span>
-        </button>
+        {/* Action buttons: Key Settings & Clear Chat */}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setShowKeyModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 text-xs border border-slate-200 transition-colors"
+            title="ตั้งค่า API Key สำหรับ Vercel หรือการใช้งานส่วนตัว"
+          >
+            <Key className="w-3.5 h-3.5 text-emerald-600" />
+            <span>{customKey ? 'API Key (เชื่อมต่อแล้ว)' : 'ตั้งค่า AI / Vercel'}</span>
+          </button>
+
+          <button
+            onClick={handleClearChat}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-rose-50 text-slate-600 hover:text-rose-700 text-xs border border-slate-200 transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>ล้างการสนทนา</span>
+          </button>
+        </div>
       </div>
 
       {/* Mode Selector and Context Strip */}
@@ -396,6 +430,124 @@ export const EcoBotChat: React.FC<EcoBotChatProps> = ({
           </form>
         </div>
       </div>
+
+      {/* AI Key & Vercel Settings Modal */}
+      {showKeyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+          <div 
+            className="w-full max-w-lg bg-white border border-slate-200 rounded-3xl shadow-2xl p-6 text-slate-800 space-y-5 animate-in fade-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <Key className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">
+                    ตั้งค่า Eco bot & การใช้งานบน Vercel
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    เชื่อมต่อ AI และแก้ปัญหาแชทบอตบน Vercel
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowKeyModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Status Strip */}
+            <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs flex items-center justify-between">
+              <span className="text-slate-600 font-medium">สถานะระบบ AI:</span>
+              {customKey ? (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-semibold">
+                  <Check className="w-3.5 h-3.5 text-emerald-700" />
+                  ใช้ API Key ส่วนตัว (Gemini สด)
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-sky-100 text-sky-800 font-semibold">
+                  <Sparkles className="w-3.5 h-3.5 text-sky-700" />
+                  ระบบการคิดวิพากษ์อัจฉริยะ (พร้อมตอบทันที)
+                </span>
+              )}
+            </div>
+
+            {/* Quick Option 1: Browser Key Input */}
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-slate-700">
+                1. ใส่ Google Gemini API Key ที่นี่ (ใช้งานได้ทันทีบนบราวเซอร์คุณ)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="password"
+                  value={keyInput}
+                  onChange={(e) => setKeyInput(e.target.value)}
+                  placeholder="เช่น AIzaSy..."
+                  className="flex-1 px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 font-mono"
+                />
+                <button
+                  type="button"
+                  onClick={handleSaveKey}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors shadow-2xs shrink-0 flex items-center gap-1"
+                >
+                  {saveSuccess ? (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      <span>บันทึกแล้ว!</span>
+                    </>
+                  ) : (
+                    <span>บันทึกคีย์</span>
+                  )}
+                </button>
+                {customKey && (
+                  <button
+                    type="button"
+                    onClick={handleClearKey}
+                    className="px-3 py-2 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 text-xs rounded-xl border border-slate-200 transition-colors shrink-0"
+                  >
+                    ลบคีย์
+                  </button>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-500">
+                * คีย์จะถูกจัดเก็บเฉพาะใน Local Storage ของเครื่องคุณเท่านั้นอย่างปลอดภัย
+              </p>
+            </div>
+
+            {/* Option 2: Vercel Environment Variables Instruction */}
+            <div className="p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-200 space-y-2 text-xs">
+              <div className="font-bold text-emerald-900 flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-700" />
+                <span>2. วิธีตั้งค่าบน Vercel ให้ทุกคนที่เข้าเว็บใช้งาน AI ได้</span>
+              </div>
+              <ol className="list-decimal list-inside space-y-1 text-slate-700 text-[11px] leading-relaxed">
+                <li>เปิดแดชบอร์ดโครงการบน <strong>Vercel</strong></li>
+                <li>ไปที่ <strong>Settings</strong> &gt; <strong>Environment Variables</strong></li>
+                <li>
+                  เพิ่มตัวแปร Key: <code className="bg-emerald-100 text-emerald-900 px-1.5 py-0.5 rounded font-mono font-bold">GEMINI_API_KEY</code> และใส่ API Key ของคุณ
+                </li>
+                <li>ไปที่แถบ <strong>Deployments</strong> &gt; กดเลือกรายการล่าสุด &gt; คลิก <strong>Redeploy</strong></li>
+              </ol>
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowKeyModal(false)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors"
+              >
+                ปิดหน้าต่าง
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

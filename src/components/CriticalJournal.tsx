@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { CRITICAL_DILEMMAS } from '../data/curriculum';
 import { Award, CheckCircle2, Copy, Send, Sparkles, Printer, Bot, AlertTriangle, ArrowRight } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { sendEcoBotMessage } from '../services/aiService';
 
 interface CriticalJournalProps {
   onOpenEcoBotWithText?: (text: string) => void;
@@ -52,18 +53,12 @@ export const CriticalJournal: React.FC<CriticalJournalProps> = () => {
 3. ข้อเสนอแนะเชิงโครงสร้าง/นโยบาย: ${proposedSolution}`;
 
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: fullSubmission,
-          mode: 'evaluate',
-        }),
+      const reply = await sendEcoBotMessage({
+        message: fullSubmission,
+        mode: 'evaluate',
       });
 
-      if (!response.ok) throw new Error('Evaluation failed');
-      const data = await response.json();
-      setEvaluationResult(data.reply);
+      setEvaluationResult(reply);
 
       // Trigger celebratory confetti
       confetti({
