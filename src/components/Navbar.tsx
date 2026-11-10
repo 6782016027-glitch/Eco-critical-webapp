@@ -58,27 +58,53 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-emerald-100 shadow-xs">
-      {/* Top Banner Notice - Pastel Mint & Sky */}
-      <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-sky-50 px-4 py-1.5 text-xs text-emerald-900 border-b border-emerald-100/70 flex items-center justify-between">
+      {/* Top Banner Notice - Role-based color & title */}
+      <div
+        className={`px-4 py-1.5 text-xs border-b flex items-center justify-between ${
+          !currentUser
+            ? 'bg-gradient-to-r from-emerald-50 via-teal-50 to-sky-50 text-emerald-900 border-emerald-100/70'
+            : isTeacherOrAdmin
+            ? 'bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-purple-100 border-purple-800'
+            : 'bg-gradient-to-r from-emerald-50 via-teal-50 to-sky-50 text-emerald-900 border-emerald-100/70'
+        }`}
+      >
         <div className="flex items-center gap-2 max-w-7xl mx-auto w-full">
-          <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span
+            className={`flex h-2 w-2 rounded-full animate-pulse ${
+              isTeacherOrAdmin ? 'bg-amber-400' : 'bg-emerald-500'
+            }`}
+          />
           <span className="font-semibold text-[11px] sm:text-xs">
-            🌱 ห้องเรียนภูมิศาสตร์สิ่งแวดล้อมเพื่อการคิดวิพากษ์ (Eco-critical) • มลพิษทางอากาศ & PM2.5 • มัธยมศึกษาตอนปลาย
+            {!currentUser
+              ? '🌱 ห้องเรียนภูมิศาสตร์สิ่งแวดล้อมเพื่อการคิดวิพากษ์ (Eco-critical) • ม.ปลาย • กรุณาเข้าสู่ระบบเพื่อเข้าสู่ห้องเรียน'
+              : isTeacherOrAdmin
+              ? '👑 แผงควบคุมผู้ดูแลระบบและครูผู้สอน (Admin / Teacher Control Center) • สิทธิ์การจัดการเต็มรูปแบบ'
+              : `🌱 ห้องเรียนภูมิศาสตร์สิ่งแวดล้อมเพื่อการคิดวิพากษ์ • นักเรียน: ${currentUser.name} • มัธยมศึกษาตอนปลาย`}
           </span>
 
           <div className="ml-auto flex items-center gap-2">
             {onOpenEtiquetteModal && (
               <button
                 onClick={onOpenEtiquetteModal}
-                className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100/80 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 transition-colors cursor-pointer"
+                className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full border transition-colors cursor-pointer ${
+                  isTeacherOrAdmin
+                    ? 'bg-white/10 hover:bg-white/20 text-purple-200 border-purple-400/40'
+                    : 'bg-emerald-100/80 hover:bg-emerald-200 text-emerald-800 border-emerald-300'
+                }`}
                 title="คลิกเพื่ออ่านกฎกติกาและมารยาทการอภิปราย"
               >
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
+                <ShieldCheck className="w-3.5 h-3.5" />
                 <span>กฎกติกามารยาท</span>
               </button>
             )}
-            <span className="hidden md:inline-block text-sky-800 font-bold text-[11px] px-2 py-0.5 rounded-full bg-sky-100/60 border border-sky-200">
-              มัธยมศึกษาตอนปลาย (ม.4 - ม.6)
+            <span
+              className={`hidden md:inline-block font-bold text-[11px] px-2 py-0.5 rounded-full border ${
+                isTeacherOrAdmin
+                  ? 'bg-amber-400/20 text-amber-300 border-amber-400/40'
+                  : 'bg-sky-100/60 text-sky-800 border-sky-200'
+              }`}
+            >
+              {isTeacherOrAdmin ? 'โหมดผู้ดูแลระบบ (Admin)' : 'มัธยมศึกษาตอนปลาย (ม.4 - ม.6)'}
             </span>
           </div>
         </div>
@@ -88,7 +114,11 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
         {/* Brand */}
         <div
-          onClick={() => setActiveTab('home')}
+          onClick={() => {
+            if (!currentUser) return;
+            if (isTeacherOrAdmin) setActiveTab('teacher_dashboard');
+            else setActiveTab('home');
+          }}
           className="flex items-center gap-2.5 cursor-pointer group shrink-0"
         >
           <img
@@ -101,122 +131,180 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-emerald-700 via-teal-700 to-sky-700 bg-clip-text text-transparent">
                 Eco-critical
               </span>
-              <span className="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-                ม.ปลาย
+              <span
+                className={`text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full border ${
+                  isTeacherOrAdmin
+                    ? 'bg-purple-100 text-purple-800 border-purple-300'
+                    : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                }`}
+              >
+                {isTeacherOrAdmin ? 'แผงควบคุมแอดมิน' : 'ม.ปลาย'}
               </span>
             </div>
             <p className="text-[11px] text-slate-500 hidden sm:block">
-              เข้าห้องเรียน · บทเรียน & ควิซ · ใบงาน & สมุดบันทึก · นัดหมายอภิปราย · Eco bot
+              {isTeacherOrAdmin
+                ? 'ระบบจัดการบทเรียน · AI Knowledge Base · ตั้งค่า AI · จัดการสิทธิ์นักเรียน'
+                : 'เข้าห้องเรียน · บทเรียน & ควิซ · ใบงาน & สมุดบันทึก · นัดหมายอภิปราย · Eco bot'}
             </p>
           </div>
         </div>
 
-        {/* Navigation Tabs (Focused strictly on High School Students - No teacher dashboard in main nav) */}
-        <nav className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto py-1">
-          {/* 1. Home / Classroom Entry Tab */}
-          <button
-            onClick={() => setActiveTab('home')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-              activeTab === 'home'
-                ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold shadow-2xs'
-                : 'text-slate-600 hover:text-emerald-800 hover:bg-emerald-50/70'
-            }`}
-          >
-            <GraduationCap className="w-4 h-4 text-emerald-600" />
-            <span>เข้าสู่ห้องเรียน</span>
-          </button>
+        {/* ======================================================== */}
+        {/* ROLE-BASED NAVIGATION TABS: STRICT SEPARATION */}
+        {/* ======================================================== */}
+        {!currentUser ? (
+          /* Unauthenticated State: No tabs, enforce login notice */
+          <div className="flex items-center gap-2 py-1 text-xs text-slate-500 font-medium">
+            <span className="px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200/80 text-slate-600 font-semibold flex items-center gap-1.5">
+              <span>🔒 กรุณาเข้าสู่ระบบก่อนเข้าดูเนื้อหา</span>
+            </span>
+          </div>
+        ) : isTeacherOrAdmin ? (
+          /* ================= ADMIN & TEACHER NAV TABS ================= */
+          <nav className="flex items-center gap-1.5 overflow-x-auto py-1">
+            <button
+              onClick={() => setActiveTab('teacher_dashboard')}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all shadow-xs ${
+                activeTab === 'teacher_dashboard'
+                  ? 'bg-purple-700 text-white shadow-purple-600/20 ring-2 ring-purple-300'
+                  : 'bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200'
+              }`}
+            >
+              <Shield className="w-4 h-4 text-purple-600" />
+              <span>แดชบอร์ดจัดการระบบ (Admin Dashboard)</span>
+            </button>
 
-          {/* 2. Lessons & Quizzes */}
-          <button
-            onClick={() => setActiveTab('lessons')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-              activeTab === 'lessons'
-                ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold shadow-2xs'
-                : 'text-slate-600 hover:text-emerald-800 hover:bg-emerald-50/70'
-            }`}
-          >
-            <BookOpen className="w-4 h-4 text-emerald-600" />
-            <span>บทเรียน & ควิซ</span>
-          </button>
+            <button
+              onClick={() => setActiveTab('home')}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+                activeTab === 'home'
+                  ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold shadow-2xs'
+                  : 'text-slate-600 hover:text-emerald-800 hover:bg-emerald-50'
+              }`}
+            >
+              <GraduationCap className="w-4 h-4 text-emerald-600" />
+              <span>ดูตัวอย่างห้องเรียนนักเรียน (Student View)</span>
+            </button>
 
-          {/* 3. Worksheets & Logbook */}
-          <button
-            onClick={() => setActiveTab('worksheets')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-              activeTab === 'worksheets'
-                ? 'bg-teal-100 text-teal-900 border border-teal-300 font-bold shadow-2xs'
-                : 'text-slate-600 hover:text-teal-800 hover:bg-teal-50/70'
-            }`}
-          >
-            <FileText className="w-4 h-4 text-teal-600" />
-            <span>ใบงาน & สมุดบันทึก</span>
-          </button>
+            {/* Quick alert badge for pending students */}
+            {users.filter((u) => u.status === 'pending').length > 0 && (
+              <button
+                onClick={() => setActiveTab('teacher_dashboard')}
+                className="hidden xl:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-bold animate-pulse"
+                title="คลิกเพื่อไปที่เมนูจัดการผู้ใช้"
+              >
+                <span>⚠️ รออนุมัติ {users.filter((u) => u.status === 'pending').length} คน</span>
+              </button>
+            )}
+          </nav>
+        ) : (
+          /* ================= STUDENT EXCLUSIVE NAV TABS ================= */
+          <nav className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto py-1">
+            {/* 1. Home / Student Classroom Hub */}
+            <button
+              onClick={() => setActiveTab('home')}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+                activeTab === 'home'
+                  ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold shadow-2xs'
+                  : 'text-slate-600 hover:text-emerald-800 hover:bg-emerald-50/70'
+              }`}
+            >
+              <GraduationCap className="w-4 h-4 text-emerald-600" />
+              <span>ห้องเรียนของฉัน</span>
+            </button>
 
-          {/* 4. Live Discussion Schedule */}
-          <button
-            onClick={() => setActiveTab('schedule')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-              activeTab === 'schedule'
-                ? 'bg-sky-100 text-sky-900 border border-sky-300 font-bold shadow-2xs'
-                : 'text-slate-600 hover:text-sky-800 hover:bg-sky-50/70'
-            }`}
-          >
-            <Calendar className="w-4 h-4 text-sky-600" />
-            <span>นัดหมายอภิปรายสด</span>
-          </button>
+            {/* 2. Lessons & Quizzes */}
+            <button
+              onClick={() => setActiveTab('lessons')}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+                activeTab === 'lessons'
+                  ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold shadow-2xs'
+                  : 'text-slate-600 hover:text-emerald-800 hover:bg-emerald-50/70'
+              }`}
+            >
+              <BookOpen className="w-4 h-4 text-emerald-600" />
+              <span>บทเรียน & ควิซ</span>
+            </button>
 
-          {/* 5. Cases & Map */}
-          <button
-            onClick={() => setActiveTab('cases')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-              activeTab === 'cases'
-                ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold shadow-2xs'
-                : 'text-slate-600 hover:text-emerald-800 hover:bg-emerald-50/70'
-            }`}
-          >
-            <MapPin className="w-4 h-4 text-emerald-600" />
-            <span>กรณีศึกษา & แผนที่</span>
-          </button>
+            {/* 3. Worksheets & Logbook */}
+            <button
+              onClick={() => setActiveTab('worksheets')}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+                activeTab === 'worksheets'
+                  ? 'bg-teal-100 text-teal-900 border border-teal-300 font-bold shadow-2xs'
+                  : 'text-slate-600 hover:text-teal-800 hover:bg-teal-50/70'
+              }`}
+            >
+              <FileText className="w-4 h-4 text-teal-600" />
+              <span>ใบงาน & สมุดบันทึก</span>
+            </button>
 
-          {/* 6. Discussion Forum */}
-          <button
-            onClick={() => setActiveTab('forum')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-              activeTab === 'forum'
-                ? 'bg-indigo-100 text-indigo-900 border border-indigo-300 font-bold shadow-2xs'
-                : 'text-slate-600 hover:text-indigo-800 hover:bg-indigo-50/70'
-            }`}
-          >
-            <MessageSquare className="w-4 h-4 text-indigo-600" />
-            <span>เว็บบอร์ด ม.ปลาย</span>
-          </button>
+            {/* 4. Live Discussion Schedule */}
+            <button
+              onClick={() => setActiveTab('schedule')}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+                activeTab === 'schedule'
+                  ? 'bg-sky-100 text-sky-900 border border-sky-300 font-bold shadow-2xs'
+                  : 'text-slate-600 hover:text-sky-800 hover:bg-sky-50/70'
+              }`}
+            >
+              <Calendar className="w-4 h-4 text-sky-600" />
+              <span>นัดหมายอภิปรายสด</span>
+            </button>
 
-          {/* 7. Simulator Lab */}
-          <button
-            onClick={() => setActiveTab('simulator')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-              activeTab === 'simulator'
-                ? 'bg-slate-100 text-slate-900 border border-slate-300 font-bold shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
-            }`}
-          >
-            <SlidersHorizontal className="w-4 h-4 text-slate-600" />
-            <span>แล็บจำลอง</span>
-          </button>
+            {/* 5. Cases & Map */}
+            <button
+              onClick={() => setActiveTab('cases')}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+                activeTab === 'cases'
+                  ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold shadow-2xs'
+                  : 'text-slate-600 hover:text-emerald-800 hover:bg-emerald-50/70'
+              }`}
+            >
+              <MapPin className="w-4 h-4 text-emerald-600" />
+              <span>กรณีศึกษา & แผนที่</span>
+            </button>
 
-          {/* 8. Eco bot Chat */}
-          <button
-            onClick={() => setActiveTab('ecobot')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-xs ${
-              activeTab === 'ecobot'
-                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-emerald-600/20 ring-2 ring-emerald-300'
-                : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200'
-            }`}
-          >
-            <Bot className="w-4 h-4" />
-            <span>Eco bot สืบค้น</span>
-          </button>
-        </nav>
+            {/* 6. Discussion Forum */}
+            <button
+              onClick={() => setActiveTab('forum')}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+                activeTab === 'forum'
+                  ? 'bg-indigo-100 text-indigo-900 border border-indigo-300 font-bold shadow-2xs'
+                  : 'text-slate-600 hover:text-indigo-800 hover:bg-indigo-50/70'
+              }`}
+            >
+              <MessageSquare className="w-4 h-4 text-indigo-600" />
+              <span>เว็บบอร์ด ม.ปลาย</span>
+            </button>
+
+            {/* 7. Simulator Lab */}
+            <button
+              onClick={() => setActiveTab('simulator')}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+                activeTab === 'simulator'
+                  ? 'bg-slate-100 text-slate-900 border border-slate-300 font-bold shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+              }`}
+            >
+              <SlidersHorizontal className="w-4 h-4 text-slate-600" />
+              <span>แล็บจำลอง</span>
+            </button>
+
+            {/* 8. Eco bot Chat */}
+            <button
+              onClick={() => setActiveTab('ecobot')}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-xs ${
+                activeTab === 'ecobot'
+                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-emerald-600/20 ring-2 ring-emerald-300'
+                  : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200'
+              }`}
+            >
+              <Bot className="w-4 h-4" />
+              <span>Eco bot สืบค้น</span>
+            </button>
+          </nav>
+        )}
 
         {/* User Profile / Auth Area */}
         <div className="relative">
@@ -278,6 +366,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       <button
                         onClick={() => {
                           quickSwitchUser('usr_admin');
+                          setActiveTab('teacher_dashboard');
                           setShowUserDropdown(false);
                         }}
                         className="w-full text-left p-1.5 rounded-lg hover:bg-purple-50 text-purple-900 flex items-center justify-between"
@@ -289,6 +378,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       <button
                         onClick={() => {
                           quickSwitchUser('usr_teacher');
+                          setActiveTab('teacher_dashboard');
                           setShowUserDropdown(false);
                         }}
                         className="w-full text-left p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-900 flex items-center justify-between"
@@ -300,6 +390,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       <button
                         onClick={() => {
                           quickSwitchUser('usr_std_naphat');
+                          setActiveTab('home');
                           setShowUserDropdown(false);
                         }}
                         className="w-full text-left p-1.5 rounded-lg hover:bg-sky-50 text-sky-900 flex items-center justify-between"

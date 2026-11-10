@@ -21,10 +21,14 @@ import {
 
 interface TeacherDashboardProps {
   initialTab?: 'lessons' | 'knowledge' | 'ai_settings' | 'users';
+  onNavigateToStudentView?: () => void;
 }
 
-export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ initialTab = 'lessons' }) => {
-  const { currentUser, quickSwitchUser } = usePortal();
+export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
+  initialTab = 'lessons',
+  onNavigateToStudentView,
+}) => {
+  const { currentUser, quickSwitchUser, users, lessons, knowledgeDocs, aiConfig } = usePortal();
   const [activeTab, setActiveTab] = useState<'lessons' | 'knowledge' | 'ai_settings' | 'users'>(
     initialTab
   );
@@ -89,8 +93,85 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ initialTab =
     },
   ];
 
+  const pendingStudentsCount = users.filter((u) => u.status === 'pending').length;
+  const totalStudentsCount = users.filter((u) => u.role === 'student').length;
+
   return (
     <div className="space-y-6">
+      {/* Admin Executive Header */}
+      <div className="p-6 bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white rounded-3xl shadow-md relative overflow-hidden">
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 right-32 -mb-12 w-48 h-48 bg-emerald-500/20 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-xs border border-white/20 text-purple-200 text-xs font-bold">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>แผงควบคุมระบบ (Admin / Teacher Dashboard)</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
+              ระบบบริหารจัดการห้องเรียน & คลังปัญญาประดิษฐ์
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+              จัดการเนื้อหาบทเรียน ม.ปลาย, แบบทดสอบท้ายบท, อัปโหลดเอกสาร AI Knowledge Base, ตั้งค่าโมเดล AI และอนุมัติสิทธิ์นักเรียน
+            </p>
+          </div>
+
+          {onNavigateToStudentView && (
+            <button
+              onClick={onNavigateToStudentView}
+              className="px-4 py-2.5 rounded-2xl bg-white/15 hover:bg-white/25 border border-white/25 text-white font-bold text-xs sm:text-sm transition-all flex items-center gap-2 shadow-xs shrink-0 cursor-pointer"
+            >
+              <GraduationCap className="w-4 h-4 text-emerald-300" />
+              <span>ดูตัวอย่างห้องเรียนนักเรียน (Student View)</span>
+            </button>
+          )}
+        </div>
+
+        {/* 4 Quick Stat Pills */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6 pt-5 border-t border-white/10 text-xs">
+          <div className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-xs border border-white/10">
+            <span className="text-slate-300 block text-[11px]">นักเรียนทั้งหมด</span>
+            <div className="text-xl font-black mt-0.5 text-white">{totalStudentsCount} คน</div>
+            <span className="text-[10px] text-emerald-300 font-semibold">ระดับมัธยมศึกษาตอนปลาย</span>
+          </div>
+
+          <div
+            onClick={() => setActiveTab('users')}
+            className={`p-3.5 rounded-2xl backdrop-blur-xs border transition-colors cursor-pointer ${
+              pendingStudentsCount > 0
+                ? 'bg-amber-500/20 border-amber-400/50 hover:bg-amber-500/30'
+                : 'bg-white/10 border-white/10'
+            }`}
+          >
+            <span className="text-slate-300 block text-[11px]">รออนุมัติเข้าเรียน</span>
+            <div className="text-xl font-black mt-0.5 text-amber-300 flex items-center gap-1.5">
+              <span>{pendingStudentsCount} บัญชี</span>
+              {pendingStudentsCount > 0 && <span className="text-[10px] bg-amber-400 text-amber-950 px-1.5 py-0.5 rounded-full font-bold">ต้องตรวจ</span>}
+            </div>
+            <span className="text-[10px] text-amber-200 font-medium">คลิกเพื่อจัดการผู้ใช้</span>
+          </div>
+
+          <div
+            onClick={() => setActiveTab('lessons')}
+            className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-xs border border-white/10 hover:bg-white/15 transition-colors cursor-pointer"
+          >
+            <span className="text-slate-300 block text-[11px]">บทเรียนในระบบ</span>
+            <div className="text-xl font-black mt-0.5 text-white">{lessons.length} บท</div>
+            <span className="text-[10px] text-purple-200 font-medium">คลิกเพื่อจัดการบทเรียน</span>
+          </div>
+
+          <div
+            onClick={() => setActiveTab('knowledge')}
+            className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-xs border border-white/10 hover:bg-white/15 transition-colors cursor-pointer"
+          >
+            <span className="text-slate-300 block text-[11px]">เอกสารใน AI Base</span>
+            <div className="text-xl font-black mt-0.5 text-white">{knowledgeDocs.length} ฉบับ</div>
+            <span className="text-[10px] text-teal-200 font-medium">{aiConfig.geminiModel}</span>
+          </div>
+        </div>
+      </div>
+
       {/* Top Navigation Tabs Header */}
       <div className="bg-white border border-slate-200 rounded-3xl p-3 shadow-xs">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">

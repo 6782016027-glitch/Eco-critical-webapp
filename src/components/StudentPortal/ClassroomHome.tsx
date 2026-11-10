@@ -83,6 +83,11 @@ export const ClassroomHome: React.FC<ClassroomHomeProps> = ({
       setLoginSuccess(res.message);
       setUsername('');
       setPassword('');
+      if (res.user?.role === 'admin' || res.user?.role === 'teacher') {
+        onNavigateTab('teacher_dashboard');
+      } else {
+        onNavigateTab('home');
+      }
     } else {
       setLoginError(res.message);
     }
@@ -706,7 +711,10 @@ export const ClassroomHome: React.FC<ClassroomHomeProps> = ({
             <div className="grid grid-cols-2 gap-2 text-xs">
               <button
                 type="button"
-                onClick={() => quickSwitchUser('usr_std_naphat')}
+                onClick={() => {
+                  quickSwitchUser('usr_std_naphat');
+                  onNavigateTab('home');
+                }}
                 className="p-2 rounded-xl bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-900 font-bold text-left transition-colors flex items-center gap-1.5"
               >
                 <span>🎓 นภัทร (นักเรียน ม.5/1)</span>
@@ -714,7 +722,10 @@ export const ClassroomHome: React.FC<ClassroomHomeProps> = ({
 
               <button
                 type="button"
-                onClick={() => quickSwitchUser('usr_teacher')}
+                onClick={() => {
+                  quickSwitchUser('usr_teacher');
+                  onNavigateTab('teacher_dashboard');
+                }}
                 className="p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-900 font-bold text-left transition-colors flex items-center gap-1.5"
               >
                 <span>👨‍🏫 Teacher (ครู)</span>
@@ -722,7 +733,10 @@ export const ClassroomHome: React.FC<ClassroomHomeProps> = ({
 
               <button
                 type="button"
-                onClick={() => quickSwitchUser('usr_admin')}
+                onClick={() => {
+                  quickSwitchUser('usr_admin');
+                  onNavigateTab('teacher_dashboard');
+                }}
                 className="p-2 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-900 font-bold text-left transition-colors flex items-center gap-1.5"
               >
                 <span>👑 ผู้ดูแลระบบ (admin)</span>

@@ -132,10 +132,10 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
         return parsed;
       } catch {
-        return INITIAL_USERS[0]; // fallback default admin
+        return null;
       }
     }
-    return INITIAL_USERS[0]; // Default to admin for immediate evaluator access
+    return null; // Require login: Default to null so the Classroom Landing Page is the initial root view
   });
 
   const [lessons, setLessons] = useState<Lesson[]>(() => {
