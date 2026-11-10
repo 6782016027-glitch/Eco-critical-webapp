@@ -128,3 +128,44 @@ export interface AiConfig {
   lastTestMessage?: string;
   lastLatencyMs?: number;
 }
+
+export interface WorksheetAnswerItem {
+  questionId: string;
+  prompt: string;
+  answer: string;
+}
+
+export interface StudentWorksheetSubmission {
+  id: string;
+  worksheetId: string;
+  worksheetNumber: number;
+  worksheetTitle: string;
+  studentId: string;
+  studentName: string;
+  gradeClass: string;
+  submittedAt: string;
+  answers: WorksheetAnswerItem[];
+  teacherScore?: number;
+  maxScore: number;
+  teacherFeedback?: string;
+  status: 'pending' | 'graded';
+}
+
+export interface StudentJournalSubmission {
+  id: string;
+  studentId: string;
+  studentName: string;
+  gradeClass: string;
+  caseStudyTitle: string;
+  entryDate: string;
+  factsAndGeography: string;
+  structuralCritique: string;
+  policyAlternatives: string;
+  personalReflection: string;
+  aiFeedback?: string;
+  teacherScore?: number;
+  maxScore: number;
+  teacherFeedback?: string;
+  status: 'pending' | 'graded';
+}
+

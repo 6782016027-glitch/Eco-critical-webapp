@@ -14,6 +14,8 @@ import {
   ForumReply,
   AiConfig,
   UserRole,
+  StudentWorksheetSubmission,
+  StudentJournalSubmission,
 } from '../types/portal';
 import {
   INITIAL_USERS,
@@ -21,6 +23,8 @@ import {
   INITIAL_KNOWLEDGE_DOCS,
   INITIAL_FORUM_TOPICS,
   INITIAL_AI_CONFIG,
+  INITIAL_WORKSHEET_SUBMISSIONS,
+  INITIAL_JOURNAL_SUBMISSIONS,
 } from '../data/portalData';
 
 interface PortalContextType {
@@ -67,6 +71,16 @@ interface PortalContextType {
   deleteTopic: (topicId: string) => void;
   addReply: (topicId: string, content: string) => void;
   toggleLikeTopic: (topicId: string) => void;
+
+  // Student Submissions (Worksheets & Journals)
+  worksheetSubmissions: StudentWorksheetSubmission[];
+  journalSubmissions: StudentJournalSubmission[];
+  gradeWorksheet: (submissionId: string, score: number, feedback: string) => void;
+  gradeJournal: (journalId: string, score: number, feedback: string) => void;
+  deleteWorksheetSubmission: (submissionId: string) => void;
+  deleteJournalSubmission: (journalId: string) => void;
+  addWorksheetSubmission: (sub: Omit<StudentWorksheetSubmission, 'id' | 'submittedAt' | 'status'>) => void;
+  addJournalSubmission: (sub: Omit<StudentJournalSubmission, 'id' | 'entryDate' | 'status'>) => void;
 }
 
 const PortalContext = createContext<PortalContextType | undefined>(undefined);
@@ -698,6 +712,83 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setForumTopics((prev) => prev.filter((t) => t.id !== topicId));
   };
 
+  // Student Submissions State
+  const [worksheetSubmissions, setWorksheetSubmissions] = useState<StudentWorksheetSubmission[]>(() => {
+    try {
+      const saved = localStorage.getItem('ECO_WORKSHEET_SUBMISSIONS');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_WORKSHEET_SUBMISSIONS;
+  });
+
+  const [journalSubmissions, setJournalSubmissions] = useState<StudentJournalSubmission[]>(() => {
+    try {
+      const saved = localStorage.getItem('ECO_JOURNAL_SUBMISSIONS');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_JOURNAL_SUBMISSIONS;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('ECO_WORKSHEET_SUBMISSIONS', JSON.stringify(worksheetSubmissions));
+  }, [worksheetSubmissions]);
+
+  useEffect(() => {
+    localStorage.setItem('ECO_JOURNAL_SUBMISSIONS', JSON.stringify(journalSubmissions));
+  }, [journalSubmissions]);
+
+  const gradeWorksheet = (submissionId: string, score: number, feedback: string) => {
+    setWorksheetSubmissions((prev) =>
+      prev.map((sub) =>
+        sub.id === submissionId
+          ? { ...sub, teacherScore: score, teacherFeedback: feedback, status: 'graded' }
+          : sub
+      )
+    );
+  };
+
+  const gradeJournal = (journalId: string, score: number, feedback: string) => {
+    setJournalSubmissions((prev) =>
+      prev.map((sub) =>
+        sub.id === journalId
+          ? { ...sub, teacherScore: score, teacherFeedback: feedback, status: 'graded' }
+          : sub
+      )
+    );
+  };
+
+  const deleteWorksheetSubmission = (submissionId: string) => {
+    setWorksheetSubmissions((prev) => prev.filter((sub) => sub.id !== submissionId));
+  };
+
+  const deleteJournalSubmission = (journalId: string) => {
+    setJournalSubmissions((prev) => prev.filter((sub) => sub.id !== journalId));
+  };
+
+  const addWorksheetSubmission = (sub: Omit<StudentWorksheetSubmission, 'id' | 'submittedAt' | 'status'>) => {
+    const newSub: StudentWorksheetSubmission = {
+      ...sub,
+      id: `sub_ws_${Date.now()}`,
+      submittedAt:
+        new Date().toLocaleDateString('th-TH') +
+        ' ' +
+        new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) +
+        ' น.',
+      status: 'pending',
+    };
+    setWorksheetSubmissions((prev) => [newSub, ...prev]);
+  };
+
+  const addJournalSubmission = (sub: Omit<StudentJournalSubmission, 'id' | 'entryDate' | 'status'>) => {
+    const newSub: StudentJournalSubmission = {
+      ...sub,
+      id: `sub_jn_${Date.now()}`,
+      entryDate: new Date().toISOString().split('T')[0],
+      status: 'pending',
+    };
+    setJournalSubmissions((prev) => [newSub, ...prev]);
+  };
+
   return (
     <PortalContext.Provider
       value={{
@@ -733,6 +824,14 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         deleteTopic,
         addReply,
         toggleLikeTopic,
+        worksheetSubmissions,
+        journalSubmissions,
+        gradeWorksheet,
+        gradeJournal,
+        deleteWorksheetSubmission,
+        deleteJournalSubmission,
+        addWorksheetSubmission,
+        addJournalSubmission,
       }}
     >
       {children}
