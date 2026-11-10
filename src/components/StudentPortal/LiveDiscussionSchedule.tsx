@@ -7,460 +7,460 @@ import React, { useState } from 'react';
 import {
   Calendar as CalendarIcon,
   Clock,
-  Users,
-  Video,
-  MessageSquare,
-  ShieldCheck,
-  CheckCircle,
-  Plus,
-  Send,
-  AlertCircle,
   BookOpen,
-  Sparkles,
+  MapPin,
+  ChevronLeft,
   ChevronRight,
-  UserCheck,
-  Bell,
-  Heart,
+  ShieldCheck,
+  Sparkles,
+  HelpCircle,
+  Layers,
+  GraduationCap,
+  FileText,
+  Compass,
 } from 'lucide-react';
-import { usePortal } from '../../context/PortalContext';
+import thaiStudentsBikeImg from '../../assets/images/thai_students_clean_air_bike_1794307914087.jpg';
 
-export interface DiscussionSession {
-  id: string;
-  title: string;
-  topicCategory: string;
-  dateStr: string;
-  timeStr: string;
-  moderator: string;
-  status: 'upcoming' | 'live' | 'completed';
-  attendeesCount: number;
-  isRegistered: boolean;
-  agenda: string[];
-  keyQuestion: string;
-  meetLink?: string;
+export interface DiscussionAgendaItem {
+  time: string;
+  activity: string;
 }
 
-const INITIAL_SESSIONS: DiscussionSession[] = [
+export interface DiscussionTopicSession {
+  id: string;
+  day: number; // Day of the month (e.g. 14, 18, 21)
+  dateStr: string;
+  timeStr: string;
+  title: string;
+  category: string;
+  curriculumStandard: string;
+  moderator: string;
+  status: 'upcoming' | 'scheduled';
+  keyQuestion: string;
+  objective: string;
+  readingPreparation: string;
+  agendaItems: DiscussionAgendaItem[];
+}
+
+const DISCUSSION_SESSIONS: DiscussionTopicSession[] = [
   {
-    id: 'live_01',
-    title: 'สัมมนาสด: ร่าง พ.ร.บ. อากาศสะอาด ใครควรเป็นผู้รับผิดชอบต้นทุนมลพิษ?',
-    topicCategory: 'นโยบายสาธารณะ & เศรษฐศาสตร์สิ่งแวดล้อม',
-    dateStr: '2026-11-14 (วันเสาร์)',
+    id: 'session-1',
+    day: 14,
+    dateStr: '14 พฤศจิกายน 2569 (วันเสาร์)',
     timeStr: '14:00 - 15:30 น.',
-    moderator: 'Teacher (ครูภูมิศาสตร์)',
+    title: 'ร่าง พ.ร.บ. อากาศสะอาด และการกระจายต้นทุนมลพิษทางภูมิศาสตร์',
+    category: 'นโยบายสาธารณะ & การจัดการสิ่งแวดล้อม',
+    curriculumStandard: 'มาตรฐาน ส 5.2 (การจัดการสิ่งแวดล้อมเพื่อการพัฒนาที่ยั่งยืน)',
+    moderator: 'ครูผู้สอนกลุ่มสาระภูมิศาสตร์',
     status: 'upcoming',
-    attendeesCount: 28,
-    isRegistered: true,
-    agenda: [
-      '14:00 - 14:15: บรรยายสรุปสาระสำคัญของร่าง พ.ร.บ. อากาศสะอาด',
-      '14:15 - 14:45: แบ่งกลุ่มย่อยวิเคราะห์หลักการ Polluter Pays Principle',
-      '14:45 - 15:20: อภิปรายสดเปิดไมค์ ชวนคิดวิพากษ์มาตรการลงโทษกลุ่มทุนข้ามพรมแดน',
-      '15:20 - 15:30: สรุปประเด็นสะท้อนคิดลงในสมุดอนุทินดิจิทัล',
+    keyQuestion:
+      'หลักการผู้ก่อมลพิษเป็นผู้จ่าย (Polluter Pays Principle) ใน พ.ร.บ. อากาศสะอาด ควรจัดสรรภาษีมลพิษคืนสู่ชุมชนในพื้นที่แอ่งกระทะอย่างไรให้เป็นธรรม?',
+    objective:
+      'เข้าใจกลไกกฎหมายอากาศสะอาด วิเคราะห์ผลกระทบเชิงพื้นที่ และเสนอแนะแนวทางชดเชยแก่ชุมชนกลุ่มเปราะบาง',
+    readingPreparation: 'เอกสารสรุปสาระสำคัญร่าง พ.ร.บ. อากาศสะอาด ฉบับประชาชน และข้อมูลดัชนี AQI ภาคเหนือ',
+    agendaItems: [
+      { time: '14:00 - 14:15 น.', activity: 'เปิดประเด็น: สรุปสถานการณ์มลพิษฝุ่น PM2.5 และสาระสำคัญร่างกฎหมาย' },
+      { time: '14:15 - 14:45 น.', activity: 'อภิปรายกลุ่ม: การประเมินต้นทุนมลพิษข้ามเขตแดนและบทบาทกลุ่มทุนการเกษตร' },
+      { time: '14:45 - 15:15 น.', activity: 'แลกเปลี่ยนข้อเสนอแนะเชิงนโยบายเพื่อนำไปจัดทำข้อเสนอของเยาวชน' },
+      { time: '15:15 - 15:30 น.', activity: 'สรุปองค์ความรู้และบันทึกประเด็นสำคัญลงในสมุดอนุทิน' },
     ],
-    keyQuestion: 'หากเก็บภาษีคาร์บอนและภาษีมลพิษสูงขึ้น จะส่งผลกระทบต่อราคาสินค้าอุปโภคบริโภคของประชาชนทั่วไปหรือไม่ และรัฐควรมีตาข่ายรองรับอย่างไร?',
-    meetLink: 'https://meet.google.com/eco-critical-hs',
   },
   {
-    id: 'live_02',
-    title: 'ห้องถกเถียง: สิทธิในอากาศสะอาด vs ข้อจำกัดการทำกินของเกษตรกรบนพื้นที่สูง',
-    topicCategory: 'ความยุติธรรมทางสิ่งแวดล้อม (Environmental Justice)',
-    dateStr: '2026-11-18 (วันพุธ)',
+    id: 'session-2',
+    day: 18,
+    dateStr: '18 พฤศจิกายน 2569 (วันพุธ)',
     timeStr: '16:30 - 17:45 น.',
-    moderator: 'Teacher (ครู)',
-    status: 'upcoming',
-    attendeesCount: 19,
-    isRegistered: false,
-    agenda: [
-      '16:30 - 16:40: ตรวจสอบความพร้อมและทบทวนกฎกติกาการสื่อสารอภิปราย',
-      '16:40 - 17:15: ตัวแทนนักเรียนนำเสนอมุมมองฝ่ายคนเมือง vs ฝ่ายชุมชนเกษตรบนดอย',
-      '17:15 - 17:45: แสวงหาจุดร่วม: เทคโนโลยีทางเลือกและการสนับสนุนงบประมาณที่เป็นธรรม',
+    title: 'สิทธิในอากาศสะอาด กับข้อจำกัดการใช้ที่ดินและวิถีเกษตรกรรมบนพื้นที่สูง',
+    category: 'ปฏิสัมพันธ์มนุษย์กับสิ่งแวดล้อม',
+    curriculumStandard: 'มาตรฐาน ส 5.2 (ปฏิสัมพันธ์ระหว่างมนุษย์กับสิ่งแวดล้อมทางกายภาพ)',
+    moderator: 'ครูผู้สอนกลุ่มสาระภูมิศาสตร์',
+    status: 'scheduled',
+    keyQuestion:
+      'นโยบายห้ามเผาเด็ดขาด 60 วัน ส่งผลกระทบต่อเศรษฐกิจชุมชนบนดอยอย่างไร และเครื่องมือภูมิสารสนเทศ (GIS/Hotspots) สามารถช่วยจัดการการเผาแบบควบคุมได้อย่างไร?',
+    objective:
+      'วิเคราะห์ความสัมพันธ์ระหว่างการใช้ที่ดินบนพื้นที่สูงกับปัญหามลพิษหมอกควัน พร้อมเสนอแนะเทคโนโลยีทางเลือกที่เป็นมิตรต่อสิ่งแวดล้อม',
+    readingPreparation: 'แผนที่การใช้ที่ดิน (Land Use Map) และสถิติจุดความร้อนดาวเทียม VIIRS ย้อนหลัง 5 ปี',
+    agendaItems: [
+      { time: '16:30 - 16:40 น.', activity: 'ชี้แจงหัวข้อและกติกาการแลกเปลี่ยนทางวิชาการ' },
+      { time: '16:40 - 17:15 น.', activity: 'อภิปรายเปรียบเทียบ: ข้อจำกัดเชิงภูมิศาสตร์ของเกษตรกร vs สิทธิในการหายใจของคนเมือง' },
+      { time: '17:15 - 17:45 น.', activity: 'ตกผลึกแนวทางจัดการร่วม (Co-management) ระหว่างภาครัฐ ชุมชน และเอกชน' },
     ],
-    keyQuestion: 'ทำไมนโยบายห้ามเผาเด็ดขาด 60 วันจึงถูกวิพากษ์ว่าผลักภาระให้คนจน และเราสามารถออกแบบมาตรการจูงใจที่เป็นบวกแทนการลงโทษได้อย่างไร?',
   },
   {
-    id: 'live_03',
-    title: 'Socratic Dialogue: ถอดบทเรียนมหาหมอกควันลอนดอน 1952 สู่แอ่งเชียงใหม่ 2026',
-    topicCategory: 'ภูมิศาสตร์ประวัติศาสตร์ & อุตุนิยมวิทยา',
-    dateStr: '2026-11-21 (วันเสาร์)',
+    id: 'session-3',
+    day: 21,
+    dateStr: '21 พฤศจิกายน 2569 (วันเสาร์)',
     timeStr: '10:00 - 11:30 น.',
-    moderator: 'Teacher (ครู)',
-    status: 'upcoming',
-    attendeesCount: 34,
-    isRegistered: false,
-    agenda: [
-      '10:00 - 10:20: เปรียบเทียบปรากฏการณ์ Anticyclone และ Inversion ในลอนดอนกับภาคเหนือ',
-      '10:20 - 10:55: วิเคราะห์ว่าทำไมอังกฤษต้องใช้เวลาถึง 4 ปีกว่าจะออก Clean Air Act 1956',
-      '10:55 - 11:30: บทบาทของเยาวชนในการผลักดันให้เกิดการเปลี่ยนแปลงเชิงโครงสร้าง',
+    title: 'ธรณีสัณฐานแอ่งที่ราบ อุณหภูมิผกผัน และบทเรียนหมอกควันข้ามแดนในอาเซียน',
+    category: 'ภูมิศาสตร์กายภาพและบรรยากาศ',
+    curriculumStandard: 'มาตรฐาน ส 5.1 (ธรณีสัณฐานและสภาพบรรยากาศภาค)',
+    moderator: 'ครูผู้สอนกลุ่มสาระภูมิศาสตร์',
+    status: 'scheduled',
+    keyQuestion:
+      'ทำไมภูมิประเทศแบบแอ่งกระทะจึงเกิดปรากฏการณ์อุณหภูมิผกผัน (Inversion) ได้ง่าย และข้อตกลงอาเซียนว่าด้วยมลพิษจากหมอกควันข้ามแดน (AATHP) มีจุดแข็งจุดอ่อนอย่างไร?',
+    objective:
+      'อธิบายกลไกทางอุตุนิยมวิทยาของชั้นผกผันอุณหภูมิ และประเมินความร่วมมือระหว่างประเทศในภูมิภาคอาเซียน',
+    readingPreparation: 'แบบจำลองภาพตัดขวางชั้นบรรยากาศแอ่งเชียงใหม่-ลำพูน และข้อตกลง AATHP',
+    agendaItems: [
+      { time: '10:00 - 10:25 น.', activity: 'ศึกษาแบบจำลองภูมิประเทศแอ่งที่ราบระหว่างภูเขาและการสะสมตัวของฝุ่น' },
+      { time: '10:25 - 11:00 น.', activity: 'วิเคราะห์ข้อมูลทิศทางลมมรสุมและจุดความร้อนข้ามพรมแดนในภูมิภาคอาเซียน' },
+      { time: '11:00 - 11:30 น.', activity: 'สรุปการวิเคราะห์เชิงวิพากษ์และประเมินประสิทธิผลของข้อตกลงระดับภูมิภาค' },
     ],
-    keyQuestion: 'อะไรคืออุปสรรคสำคัญทางการเมืองและเศรษฐกิจที่ทำให้การแก้ปัญหามลพิษในปัจจุบันล่าช้ากว่าที่ควรจะเป็น?',
   },
 ];
 
+// Days in November 2026 (Starts on Sunday = day 0)
+const CALENDAR_DAYS_NOV_2026 = Array.from({ length: 30 }, (_, i) => i + 1);
+
 interface LiveDiscussionScheduleProps {
-  onOpenEtiquetteModal: () => void;
+  onOpenEtiquetteModal?: () => void;
 }
 
 export const LiveDiscussionSchedule: React.FC<LiveDiscussionScheduleProps> = ({
   onOpenEtiquetteModal,
 }) => {
-  const { currentUser } = usePortal();
-  const [sessions, setSessions] = useState<DiscussionSession[]>(INITIAL_SESSIONS);
-  const [filter, setFilter] = useState<'all' | 'registered'>('all');
-  const [selectedSessionId, setSelectedSessionId] = useState<string>(INITIAL_SESSIONS[0].id);
-  const [inLiveRoom, setInLiveRoom] = useState(false);
+  const [selectedSessionId, setSelectedSessionId] = useState<string>('session-1');
 
-  // Live Room Chat Mock
-  const [liveChatMessages, setLiveChatMessages] = useState<
-    Array<{ id: string; sender: string; role: string; text: string; time: string }>
-  >([
-    {
-      id: 'm1',
-      sender: 'Teacher (ครู)',
-      role: 'teacher',
-      text: 'ยินดีต้อนรับนักเรียน ม.ปลาย ทุกคนเข้าสู่ห้องอภิปรายสด ขอความร่วมมือปฏิบัติตามกฎกติกามารยาทการอภิปรายที่ตกลงกันไว้นะครับ',
-      time: '14:02',
-    },
-    {
-      id: 'm2',
-      sender: 'นายนภัทร (ม.5/1)',
-      role: 'student',
-      text: 'ผมคิดว่าหากจะเก็บภาษีคาร์บอน ต้องแยกแยะระหว่างเกษตรกรรายย่อยกับกลุ่มทุนเกษตรพันธสัญญาครับ เพราะเกษตรกรต้นทุนชีวิตต่ำกว่ามาก',
-      time: '14:05',
-    },
-    {
-      id: 'm3',
-      sender: 'Teacher (ครู)',
-      role: 'teacher',
-      text: 'ดีมากครับนภัทร ตรงกับหลักความยุติธรรมทางสิ่งแวดล้อม (Environmental Justice) แล้วเพื่อนๆ คนอื่นคิดว่าเราจะตรวจสอบย้อนกลับ (Traceability) ได้อย่างไร?',
-      time: '14:08',
-    },
-  ]);
-  const [inputMsg, setInputMsg] = useState('');
-
-  const toggleRegister = (id: string) => {
-    setSessions((prev) =>
-      prev.map((s) => {
-        if (s.id === id) {
-          const nextState = !s.isRegistered;
-          return {
-            ...s,
-            isRegistered: nextState,
-            attendeesCount: nextState ? s.attendeesCount + 1 : Math.max(0, s.attendeesCount - 1),
-          };
-        }
-        return s;
-      })
-    );
-  };
-
-  const handleSendLiveMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputMsg.trim()) return;
-
-    const newMsg = {
-      id: `m_${Date.now()}`,
-      sender: currentUser ? `${currentUser.name} (${currentUser.gradeClass || 'ม.ปลาย'})` : 'นักเรียน ม.ปลาย',
-      role: currentUser?.role || 'student',
-      text: inputMsg.trim(),
-      time: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
-    };
-
-    setLiveChatMessages((prev) => [...prev, newMsg]);
-    setInputMsg('');
-  };
-
-  const displayedSessions = sessions.filter((s) => {
-    if (filter === 'registered') return s.isRegistered;
-    return true;
-  });
-
-  const activeSession = sessions.find((s) => s.id === selectedSessionId) || sessions[0];
+  const selectedSession =
+    DISCUSSION_SESSIONS.find((s) => s.id === selectedSessionId) || DISCUSSION_SESSIONS[0];
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-150">
-      {/* Top Banner Header */}
-      <div className="p-6 bg-gradient-to-r from-emerald-100/70 via-teal-50 to-sky-100/70 rounded-3xl border border-emerald-200/80 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-white/80 border border-emerald-200 text-emerald-800 text-xs font-bold mb-2 shadow-2xs">
-            <CalendarIcon className="w-3.5 h-3.5 text-emerald-700" />
-            <span>ตารางเวลานัดหมายการอภิปรายสด (Live Critical Seminars)</span>
+    <div className="space-y-8 animate-in fade-in duration-200">
+      {/* ======================================================== */}
+      {/* TOP HEADER: Clean Eco Banner with Thai Student Graphic   */}
+      {/* ======================================================== */}
+      <div className="p-6 sm:p-7 bg-white rounded-3xl border border-emerald-200/80 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+        <div className="flex items-start sm:items-center gap-4">
+          <img
+            src={thaiStudentsBikeImg}
+            alt="นักเรียนมัธยมไทยร่วมกิจกรรมสิ่งแวดล้อม"
+            className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border-2 border-emerald-300 shadow-xs shrink-0"
+          />
+          <div className="space-y-1">
+            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
+              <Compass className="w-3.5 h-3.5 text-emerald-700" />
+              <span>สาระภูมิศาสตร์ ม.ปลาย • มาตรฐาน ส 5.1 & ส 5.2</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              ปฏิทินและตารางนัดหมายการอภิปรายสด
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              กำหนดการเสวนาแลกเปลี่ยนความคิดเห็นด้านมลพิษทางอากาศ ภูมิศาสตร์กายภาพ และนโยบายสิ่งแวดล้อม
+            </p>
           </div>
-          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
-            <span>ปฏิทินนัดหมายการอภิปรายสด ม.ปลาย</span>
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl leading-relaxed">
-            พื้นที่นัดหมายการสัมมนาสดแบบ Socratic Dialogue ร่วมกับ Teacher (ครู) และเพื่อนร่วมชั้น เพื่อถกเถียงข้อเสนอแนะเชิงนโยบายและมลพิษทางอากาศ
-          </p>
         </div>
 
-        {/* Action Button to Open Etiquette Modal */}
-        <button
-          onClick={onOpenEtiquetteModal}
-          className="px-4 py-2.5 rounded-2xl bg-white hover:bg-emerald-50 text-emerald-900 border border-emerald-300 font-bold text-xs shadow-2xs transition-all flex items-center gap-2 shrink-0 cursor-pointer"
-        >
-          <ShieldCheck className="w-4 h-4 text-emerald-600" />
-          <span>ทบทวนกฎกติกาและมารยาท</span>
-        </button>
+        {onOpenEtiquetteModal && (
+          <button
+            onClick={onOpenEtiquetteModal}
+            className="px-4 py-2.5 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 font-bold text-xs shadow-2xs transition-all flex items-center gap-2 shrink-0 cursor-pointer hover:scale-102"
+          >
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <span>แนวปฏิบัติการอภิปราย</span>
+          </button>
+        )}
       </div>
 
-      {/* Main Grid: Sessions List & Detailed Room / Viewer */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Sessions List (5 cols) */}
-        <div className="lg:col-span-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-emerald-600" />
-              <span>รอบการสัมมนาที่จะมาถึง</span>
-            </h2>
-
-            {/* Filter */}
-            <div className="flex p-0.5 bg-slate-100 rounded-xl text-xs font-bold">
-              <button
-                onClick={() => setFilter('all')}
-                className={`px-3 py-1 rounded-lg transition-colors ${
-                  filter === 'all' ? 'bg-white text-emerald-800 shadow-2xs' : 'text-slate-600'
-                }`}
-              >
-                ทั้งหมด ({sessions.length})
-              </button>
-              <button
-                onClick={() => setFilter('registered')}
-                className={`px-3 py-1 rounded-lg transition-colors ${
-                  filter === 'registered' ? 'bg-white text-emerald-800 shadow-2xs' : 'text-slate-600'
-                }`}
-              >
-                ที่ฉันลงชื่อไว้
-              </button>
+      {/* ======================================================== */}
+      {/* ส่วนที่ 1: ปฏิทิน (CALENDAR)                               */}
+      {/* ======================================================== */}
+      <section className="bg-white rounded-3xl border border-emerald-200/80 p-6 sm:p-7 shadow-xs space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+              <CalendarIcon className="w-5 h-5 text-emerald-700" />
+            </div>
+            <div>
+              <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                <span>1) ปฏิทินนัดหมาย (Calendar)</span>
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                  พฤศจิกายน 2569
+                </span>
+              </h2>
+              <p className="text-xs text-slate-500">
+                คลิกเลือกวันที่ไฮไลต์เพื่อดูรายละเอียดรอบการอภิปราย
+              </p>
             </div>
           </div>
 
-          <div className="space-y-3">
-            {displayedSessions.map((session) => (
-              <div
-                key={session.id}
-                onClick={() => {
-                  setSelectedSessionId(session.id);
-                  setInLiveRoom(false);
-                }}
-                className={`p-4 rounded-2xl border transition-all cursor-pointer space-y-3 ${
-                  selectedSessionId === session.id
-                    ? 'bg-emerald-50/70 border-emerald-300 shadow-xs ring-2 ring-emerald-400/20'
-                    : 'bg-white border-slate-200/90 hover:border-emerald-200'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                    {session.topicCategory}
-                  </span>
-                  <div className="flex items-center gap-1 text-[11px] font-bold text-slate-500">
-                    <Users className="w-3.5 h-3.5 text-slate-400" />
-                    <span>{session.attendeesCount} คน</span>
-                  </div>
-                </div>
+          <div className="flex items-center gap-4 text-xs font-semibold text-slate-600">
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-emerald-600 ring-2 ring-emerald-200" />
+              <span>มีรอบนัดหมายอภิปราย</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-slate-200" />
+              <span>วันทั่วไป</span>
+            </span>
+          </div>
+        </div>
 
-                <h3 className="font-bold text-sm text-slate-900 leading-snug">
-                  {session.title}
-                </h3>
+        {/* Calendar Grid */}
+        <div className="w-full">
+          {/* Day of Week Headers (Nov 1, 2026 starts on Sunday) */}
+          <div className="grid grid-cols-7 gap-2 text-center text-xs font-bold text-slate-500 pb-2">
+            <span className="text-rose-500">อา. (Sun)</span>
+            <span>จ. (Mon)</span>
+            <span>อ. (Tue)</span>
+            <span>พ. (Wed)</span>
+            <span>พฤ. (Thu)</span>
+            <span>ศ. (Fri)</span>
+            <span className="text-sky-600">ส. (Sat)</span>
+          </div>
 
-                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
-                  <div className="flex items-center gap-1 font-medium text-emerald-800">
-                    <CalendarIcon className="w-3.5 h-3.5" />
-                    <span>{session.dateStr}</span>
-                  </div>
-                  <div className="flex items-center gap-1 font-medium text-slate-500">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>{session.timeStr}</span>
-                  </div>
-                </div>
+          {/* Days Grid */}
+          <div className="grid grid-cols-7 gap-2">
+            {CALENDAR_DAYS_NOV_2026.map((day) => {
+              const sessionOnThisDay = DISCUSSION_SESSIONS.find((s) => s.day === day);
+              const isSelected = selectedSession?.day === day;
 
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-500">
-                    ผู้ดำเนินการ: <strong className="text-slate-700">{session.moderator}</strong>
-                  </span>
-
+              if (sessionOnThisDay) {
+                return (
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleRegister(session.id);
-                    }}
-                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
-                      session.isRegistered
-                        ? 'bg-emerald-700 text-white'
-                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                    key={day}
+                    onClick={() => setSelectedSessionId(sessionOnThisDay.id)}
+                    className={`h-16 sm:h-20 p-2 rounded-2xl flex flex-col justify-between items-start transition-all cursor-pointer border text-left ${
+                      isSelected
+                        ? 'bg-gradient-to-br from-emerald-600 to-teal-700 text-white border-emerald-700 shadow-md scale-102 ring-2 ring-emerald-300'
+                        : 'bg-emerald-50/90 text-emerald-950 border-emerald-300 hover:bg-emerald-100 hover:scale-101'
                     }`}
                   >
-                    {session.isRegistered ? (
-                      <>
-                        <CheckCircle className="w-3.5 h-3.5" />
-                        <span>ลงชื่อแล้ว</span>
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>ลงชื่อเข้าร่วม</span>
-                      </>
-                    )}
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-sm sm:text-base font-black">{day}</span>
+                      <span
+                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                          isSelected ? 'bg-white/20 text-white' : 'bg-emerald-200 text-emerald-900'
+                        }`}
+                      >
+                        เสวนา
+                      </span>
+                    </div>
+                    <p
+                      className={`text-[10px] sm:text-[11px] font-semibold line-clamp-1 ${
+                        isSelected ? 'text-emerald-100' : 'text-emerald-800'
+                      }`}
+                    >
+                      {sessionOnThisDay.timeStr.split(' - ')[0]}
+                    </p>
                   </button>
+                );
+              }
+
+              return (
+                <div
+                  key={day}
+                  className="h-16 sm:h-20 p-2 rounded-2xl bg-slate-50/70 border border-slate-200/60 flex flex-col justify-between items-start text-slate-400"
+                >
+                  <span className="text-xs sm:text-sm font-semibold">{day}</span>
+                  <span className="text-[10px] text-slate-300">-</span>
                 </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ======================================================== */}
+      {/* ส่วนที่ 2: ตารางวันเวลานัดหมาย (SCHEDULE TABLE / AGENDA)   */}
+      {/* ======================================================== */}
+      <section className="bg-white rounded-3xl border border-emerald-200/80 p-6 sm:p-7 shadow-xs space-y-5">
+        <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+          <div className="w-9 h-9 rounded-xl bg-sky-100 text-sky-800 flex items-center justify-center font-bold">
+            <Clock className="w-5 h-5 text-sky-700" />
+          </div>
+          <div>
+            <h2 className="text-lg font-black text-slate-900">
+              2) ตารางวันเวลานัดหมาย (Schedule Table / Agenda List)
+            </h2>
+            <p className="text-xs text-slate-500">
+              กำหนดการจัดสัมมนาสดทางวิชาการและลำดับกิจกรรมการอภิปราย
+            </p>
+          </div>
+        </div>
+
+        {/* Schedule Table */}
+        <div className="overflow-x-auto rounded-2xl border border-slate-200">
+          <table className="w-full text-left text-xs sm:text-sm">
+            <thead className="bg-slate-100/80 text-slate-700 font-bold border-b border-slate-200">
+              <tr>
+                <th className="py-3 px-4">วัน / เดือน / ปี</th>
+                <th className="py-3 px-4">เวลา</th>
+                <th className="py-3 px-4">หัวข้อการอภิปราย</th>
+                <th className="py-3 px-4">กลุ่มสาระภูมิศาสตร์</th>
+                <th className="py-3 px-4">ผู้ดำเนินการ</th>
+                <th className="py-3 px-4 text-center">สถานะ</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {DISCUSSION_SESSIONS.map((session) => {
+                const isSelected = session.id === selectedSession.id;
+                return (
+                  <tr
+                    key={session.id}
+                    onClick={() => setSelectedSessionId(session.id)}
+                    className={`cursor-pointer transition-colors ${
+                      isSelected
+                        ? 'bg-emerald-50/80 font-semibold'
+                        : 'hover:bg-slate-50 text-slate-700'
+                    }`}
+                  >
+                    <td className="py-3.5 px-4 font-bold text-slate-900 whitespace-nowrap">
+                      {session.dateStr}
+                    </td>
+                    <td className="py-3.5 px-4 font-mono text-emerald-800 whitespace-nowrap">
+                      {session.timeStr}
+                    </td>
+                    <td className="py-3.5 px-4 font-bold text-slate-900 max-w-xs">
+                      {session.title}
+                    </td>
+                    <td className="py-3.5 px-4 text-slate-600">
+                      <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-xs">
+                        {session.category}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 text-slate-600 whitespace-nowrap">
+                      {session.moderator}
+                    </td>
+                    <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                      <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200">
+                        {session.status === 'upcoming' ? 'รอบถัดไป' : 'ตามกำหนดการ'}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Detailed Time-by-Time Agenda of the Selected Session */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-emerald-700" />
+            <h3 className="text-xs sm:text-sm font-bold text-slate-800">
+              กำหนดการลำดับเวลา (Agenda Breakdown): <span className="text-emerald-800">{selectedSession.title}</span>
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {selectedSession.agendaItems.map((item, idx) => (
+              <div
+                key={idx}
+                className="flex items-start gap-3 p-3 bg-white rounded-xl border border-slate-200/70 shadow-2xs"
+              >
+                <span className="font-mono text-xs font-extrabold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md shrink-0">
+                  {item.time}
+                </span>
+                <span className="text-xs text-slate-700 leading-relaxed font-medium">
+                  {item.activity}
+                </span>
               </div>
             ))}
           </div>
         </div>
+      </section>
 
-        {/* Right Column: Session Detail & Live Socratic Room (7 cols) */}
-        <div className="lg:col-span-7 space-y-4">
-          <div className="bg-white p-6 sm:p-7 rounded-3xl border border-slate-200/90 shadow-xs space-y-5">
-            {/* Header of Active Session */}
-            <div className="space-y-2 pb-4 border-b border-slate-100">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800">
-                  {activeSession.topicCategory}
-                </span>
-                <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
-                  <Users className="w-4 h-4 text-emerald-600" />
-                  <span>มีผู้ลงชื่อแล้ว {activeSession.attendeesCount} คน</span>
-                </span>
-              </div>
+      {/* ======================================================== */}
+      {/* ส่วนที่ 3: หัวข้อการอภิปราย (DISCUSSION TOPICS)           */}
+      {/* ======================================================== */}
+      <section className="bg-white rounded-3xl border border-emerald-200/80 p-6 sm:p-7 shadow-xs space-y-5">
+        <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+          <div className="w-9 h-9 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center font-bold">
+            <BookOpen className="w-5 h-5 text-teal-700" />
+          </div>
+          <div>
+            <h2 className="text-lg font-black text-slate-900">
+              3) หัวข้อการอภิปราย (Discussion Topics / Agenda Subjects)
+            </h2>
+            <p className="text-xs text-slate-500">
+              สาระสำคัญ ประเด็นคำถามเชิงวิพากษ์ และเอกสารเตรียมตัวก่อนเข้าฟังการเสวนา
+            </p>
+          </div>
+        </div>
 
-              <h2 className="text-lg sm:text-xl font-extrabold text-slate-900">
-                {activeSession.title}
-              </h2>
-
-              <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600 pt-1">
-                <span className="flex items-center gap-1 font-bold text-emerald-800">
-                  <CalendarIcon className="w-4 h-4" />
-                  {activeSession.dateStr}
-                </span>
-                <span className="flex items-center gap-1 font-bold text-sky-800">
-                  <Clock className="w-4 h-4" />
-                  {activeSession.timeStr}
-                </span>
-                <span className="flex items-center gap-1 text-slate-600">
-                  <UserCheck className="w-4 h-4 text-slate-400" />
-                  {activeSession.moderator}
-                </span>
-              </div>
+        {/* Topic Detail Grid for Selected Subject */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* Card 1: Key Question & Standard */}
+          <div className="md:col-span-2 p-5 rounded-2xl bg-gradient-to-br from-emerald-50/60 via-teal-50/40 to-sky-50/60 border border-emerald-200/80 space-y-4 shadow-2xs">
+            <div className="flex items-center gap-2">
+              <GraduationCap className="w-4 h-4 text-emerald-700" />
+              <span className="text-xs font-bold text-emerald-900">{selectedSession.curriculumStandard}</span>
             </div>
 
-            {/* Core Critical Question */}
-            <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50/80 via-teal-50 to-sky-50/80 border border-emerald-200/80 space-y-1.5">
-              <div className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-emerald-600" />
-                <span>ประเด็นคำถามหลักสำหรับการอภิปราย (Core Critical Inquiry):</span>
+            <h3 className="text-base sm:text-lg font-black text-slate-900 leading-snug">
+              {selectedSession.title}
+            </h3>
+
+            {/* Key Critical Question */}
+            <div className="p-4 rounded-xl bg-white border border-emerald-200 shadow-2xs space-y-2">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800">
+                <HelpCircle className="w-4 h-4 text-emerald-600" />
+                <span>คำถามสำคัญเชิงวิพากษ์ (Key Inquiry Question):</span>
               </div>
-              <p className="text-xs sm:text-sm font-semibold text-slate-800 leading-relaxed">
-                "{activeSession.keyQuestion}"
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-semibold">
+                "{selectedSession.keyQuestion}"
               </p>
             </div>
 
-            {/* Agenda Schedule */}
-            <div className="space-y-2">
-              <h4 className="font-bold text-xs sm:text-sm text-slate-800 flex items-center gap-1.5">
-                <BookOpen className="w-4 h-4 text-emerald-600" />
-                <span>กำหนดการและกิจกรรมในการสัมมนา:</span>
-              </h4>
-              <div className="space-y-1.5 text-xs text-slate-600">
-                {activeSession.agenda.map((item, idx) => (
-                  <div key={idx} className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-start gap-2">
-                    <span className="font-bold text-emerald-700 shrink-0">•</span>
-                    <span>{item}</span>
-                  </div>
-                ))}
+            {/* Learning Objective */}
+            <div className="space-y-1">
+              <span className="text-xs font-bold text-slate-600">เป้าหมายการเรียนรู้:</span>
+              <p className="text-xs text-slate-700 leading-relaxed">
+                {selectedSession.objective}
+              </p>
+            </div>
+          </div>
+
+          {/* Card 2: Preparation Materials */}
+          <div className="p-5 rounded-2xl bg-white border border-slate-200 space-y-4 shadow-2xs flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                <FileText className="w-4 h-4 text-slate-500" />
+                <span>เอกสารและสื่อเตรียมตัวล่วงหน้า</span>
               </div>
+              <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">
+                {selectedSession.readingPreparation}
+              </p>
             </div>
 
-            {/* Action Bar */}
-            <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <button
-                onClick={() => toggleRegister(activeSession.id)}
-                className={`w-full sm:w-auto px-5 py-2.5 rounded-xl font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-2 ${
-                  activeSession.isRegistered
-                    ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
-                    : 'bg-[#14532d] hover:bg-[#166534] text-white'
-                }`}
-              >
-                {activeSession.isRegistered ? (
-                  <>
-                    <CheckCircle className="w-4 h-4 text-emerald-700" />
-                    <span>ลงชื่อแล้ว (คลิกเพื่อยกเลิก)</span>
-                  </>
-                ) : (
-                  <>
-                    <Plus className="w-4 h-4" />
-                    <span>ลงชื่อเข้าร่วมการสัมมนานี้</span>
-                  </>
-                )}
-              </button>
-
-              <button
-                onClick={() => setInLiveRoom(!inLiveRoom)}
-                className={`w-full sm:w-auto px-5 py-2.5 rounded-xl font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-2 ${
-                  inLiveRoom
-                    ? 'bg-slate-100 text-slate-700'
-                    : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white'
-                }`}
-              >
-                <Video className="w-4 h-4" />
-                <span>{inLiveRoom ? 'ซ่อนห้องอภิปรายสดจำลอง' : 'เปิดห้องอภิปรายสดจำลอง (Live Room)'}</span>
-              </button>
+            <div className="pt-3 border-t border-slate-100 text-xs text-slate-500 space-y-1">
+              <p>ผู้ดำเนินการ: <strong>{selectedSession.moderator}</strong></p>
+              <p>วันเวลา: <strong>{selectedSession.dateStr} ({selectedSession.timeStr})</strong></p>
             </div>
-
-            {/* Simulated Live Room Box */}
-            {inLiveRoom && (
-              <div className="mt-4 p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-4 animate-in fade-in">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="font-bold text-xs text-slate-800">
-                      ห้องอภิปรายสดจำลอง (Socratic Seminar Stream)
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-slate-500">
-                    กำลังออนไลน์: 24 คน
-                  </span>
-                </div>
-
-                {/* Messages Stream */}
-                <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
-                  {liveChatMessages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`p-3 rounded-2xl text-xs space-y-1 ${
-                        msg.role === 'teacher'
-                          ? 'bg-emerald-50/90 border border-emerald-200 text-emerald-950'
-                          : 'bg-white border border-slate-200/80 text-slate-800'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between text-[10px]">
-                        <span className="font-bold text-slate-700">{msg.sender}</span>
-                        <span className="text-slate-400">{msg.time}</span>
-                      </div>
-                      <p className="leading-relaxed">{msg.text}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Input Form */}
-                <form onSubmit={handleSendLiveMessage} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={inputMsg}
-                    onChange={(e) => setInputMsg(e.target.value)}
-                    placeholder="พิมพ์ความคิดเห็นของคุณตามกฎกติกาการอภิปราย..."
-                    className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-emerald-500"
-                  />
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-[#14532d] hover:bg-[#166534] text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1 cursor-pointer"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    <span>ส่ง</span>
-                  </button>
-                </form>
-              </div>
-            )}
           </div>
         </div>
-      </div>
+
+        {/* List of All 3 Discussion Topics Cards */}
+        <div className="pt-4 border-t border-slate-100 space-y-3">
+          <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+            รายการหัวข้อการอภิปรายทั้งหมด (3 หัวข้อหลัก):
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {DISCUSSION_SESSIONS.map((session, index) => (
+              <div
+                key={session.id}
+                onClick={() => setSelectedSessionId(session.id)}
+                className={`p-4 rounded-2xl border transition-all cursor-pointer space-y-2 ${
+                  session.id === selectedSession.id
+                    ? 'bg-emerald-50 border-emerald-300 shadow-2xs ring-2 ring-emerald-300'
+                    : 'bg-white border-slate-200 hover:border-emerald-200'
+                }`}
+              >
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-emerald-800">หัวข้อที่ {index + 1}</span>
+                  <span className="text-[11px] text-slate-500 font-mono">{session.dateStr.split(' ')[0]} พ.ย.</span>
+                </div>
+                <h4 className="text-xs sm:text-sm font-bold text-slate-900 line-clamp-2">
+                  {session.title}
+                </h4>
+                <p className="text-[11px] text-slate-500 line-clamp-2">
+                  {session.keyQuestion}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   );
 };

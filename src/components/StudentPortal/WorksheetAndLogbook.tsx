@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { usePortal } from '../../context/PortalContext';
 import { CASE_STUDIES } from '../../data/caseStudies';
+import thaiStudentsPlantingImg from '../../assets/images/thai_students_planting_trees_1794307897081.jpg';
 
 export interface LogbookEntry {
   id: string;
@@ -135,7 +136,7 @@ const WORKSHEET_TEMPLATES = [
       {
         id: 'q3',
         prompt: '3. ในฐานะเยาวชนคนรุ่นใหม่ คุณมีข้อเสนอแนะ 1 ข้อต่อรัฐบาลในการแก้ปัญหาฝุ่น PM2.5 อย่างยั่งยืนอย่างไร?',
-        hint: 'ข้อเสนอที่สมดุลระหว่างวิทยาศาสตร์ เศรษฐกิจ และสิทธิมนุษยชน',
+        hint: 'ข้อเสนอที่สมดุลระหว่างภูมิศาสตร์กายภาพ เศรษฐกิจชุมชน และสิทธิมนุษยชน',
       },
     ],
   },
@@ -211,7 +212,7 @@ export const WorksheetAndLogbook: React.FC = () => {
         structuralCritique: critiqueText,
         policyAlternatives: policyText,
         personalReflection: reflectionText,
-        aiFeedback: 'Eco bot ได้บันทึกและประเมินอนุทินของคุณ: แสดงความคิดวิพากษ์ที่มีโครงสร้างชัดเจน ขอชื่นชมที่คุณมองเห็นทั้งมิติวิทยาศาสตร์กายภาพและความเป็นธรรมทางสังคม!',
+        aiFeedback: 'Eco bot ได้บันทึกและประเมินอนุทินของคุณ: แสดงความคิดวิพากษ์ที่มีโครงสร้างชัดเจน ขอชื่นชมที่คุณมองเห็นทั้งมิติภูมิศาสตร์กายภาพและภูมิสารสนเทศควบคู่ความเป็นธรรมทางสังคม!',
       };
       setLogbooks((prev) => [newEntry, ...prev]);
     }
@@ -262,17 +263,24 @@ export const WorksheetAndLogbook: React.FC = () => {
     <div className="space-y-6 animate-in fade-in duration-150">
       {/* Top Banner Header */}
       <div className="p-6 bg-gradient-to-r from-emerald-100/70 via-teal-50 to-sky-100/70 rounded-3xl border border-emerald-200/80 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-white/80 border border-emerald-200 text-emerald-800 text-xs font-bold mb-2 shadow-2xs">
-            <BookOpen className="w-3.5 h-3.5 text-emerald-700" />
-            <span>การคิดเชิงวิพากษ์ ม.ปลาย (Critical Thinking & Reflection)</span>
+        <div className="flex items-center gap-4">
+          <img
+            src={thaiStudentsPlantingImg}
+            alt="นักเรียนมัธยมไทยร่วมใจรักษ์สิ่งแวดล้อมและบันทึกอนุทิน"
+            className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border-2 border-emerald-300 shadow-2xs shrink-0"
+          />
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-white/80 border border-emerald-200 text-emerald-800 text-xs font-bold mb-1 shadow-2xs">
+              <BookOpen className="w-3.5 h-3.5 text-emerald-700" />
+              <span>การคิดเชิงวิพากษ์ ม.ปลาย (Critical Thinking & Reflection)</span>
+            </div>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
+              <span>ใบงาน & สมุดอนุทินสะท้อนคิดดิจิทัล</span>
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-600 mt-0.5 max-w-2xl leading-relaxed">
+              พื้นที่บันทึกการคิดวิพากษ์รายบุคคล วิเคราะห์กรณีศึกษามลพิษทางอากาศ และทำใบงานกิจกรรมตามระเบียบวิธีวิจัยภูมิศาสตร์สิ่งแวดล้อม
+            </p>
           </div>
-          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
-            <span>ใบงาน & สมุดอนุทินสะท้อนคิดดิจิทัล</span>
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl leading-relaxed">
-            พื้นที่บันทึกการคิดวิพากษ์รายบุคคล วิเคราะห์กรณีศึกษามลพิษทางอากาศ และทำใบงานกิจกรรมตามระเบียบวิธีวิจัยภูมิศาสตร์สิ่งแวดล้อม
-          </p>
         </div>
 
         {/* Tab Switcher */}
@@ -625,7 +633,7 @@ export const WorksheetAndLogbook: React.FC = () => {
                       rows={3}
                       value={answer}
                       onChange={(e) => handleUpdateWsAnswer(currentWorksheet.id, q.id, e.target.value)}
-                      placeholder="พิมพ์คำตอบของคุณที่นี่อย่างละเอียด พร้อมให้เหตุผลทางวิทยาศาสตร์และสังคม..."
+                      placeholder="พิมพ์คำตอบของคุณที่นี่อย่างละเอียด พร้อมให้เหตุผลทางภูมิศาสตร์กายภาพและโครงสร้างสังคม..."
                       className="w-full p-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 text-xs sm:text-sm leading-relaxed"
                     />
                   </div>

@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { usePortal } from '../../context/PortalContext';
 import { Lesson } from '../../types/portal';
+import thaiStudentsPlantingImg from '../../assets/images/thai_students_planting_trees_1794307897081.jpg';
 import {
   BookOpen,
   Search,
@@ -29,11 +30,11 @@ export const LessonCatalog: React.FC<LessonCatalogProps> = ({ onSelectLesson }) 
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   const categories = [
-    { id: 'all', label: 'ทั้งหมด' },
-    { id: 'วิทยาศาสตร์บรรยากาศ', label: 'วิทยาศาสตร์บรรยากาศ' },
-    { id: 'ภูมิศาสตร์กายภาพ', label: 'ภูมิศาสตร์กายภาพ' },
-    { id: 'ภูมิศาสตร์มนุษย์และเศรษฐกิจ', label: 'ภูมิศาสตร์มนุษย์และเศรษฐกิจ' },
-    { id: 'นโยบายและกฎหมาย', label: 'นโยบายและกฎหมาย' },
+    { id: 'all', label: 'ทุกกลุ่มสาระภูมิศาสตร์' },
+    { id: 'ภูมิสารสนเทศและเครื่องมือทางภูมิศาสตร์', label: 'ภูมิสารสนเทศ & GIS (ส 5.1)' },
+    { id: 'ภูมิศาสตร์กายภาพ', label: 'ภูมิศาสตร์กายภาพ (ส 5.1)' },
+    { id: 'ภูมิศาสตร์มนุษย์และสิ่งแวดล้อม', label: 'มนุษย์กับสิ่งแวดล้อม (ส 5.2)' },
+    { id: 'การจัดการภัยพิบัติและการพัฒนาที่ยั่งยืน', label: 'การจัดการสิ่งแวดล้อม (ส 5.2)' },
   ];
 
   const filteredLessons = lessons.filter((lesson) => {
@@ -53,18 +54,25 @@ export const LessonCatalog: React.FC<LessonCatalogProps> = ({ onSelectLesson }) 
       {/* Search & Filter Header */}
       <div className="p-6 bg-white border border-slate-200 rounded-3xl shadow-xs space-y-4">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100/80 text-emerald-800 text-[11px] font-bold mb-2">
-              <GraduationCap className="w-3.5 h-3.5 text-emerald-700" />
-              <span>ระดับชั้นมัธยมศึกษาตอนปลาย (ม.4 - ม.6)</span>
+          <div className="flex items-center gap-4">
+            <img
+              src={thaiStudentsPlantingImg}
+              alt="นักเรียนมัธยมไทยร่วมใจรักษ์สิ่งแวดล้อม"
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border-2 border-emerald-200 shadow-2xs shrink-0"
+            />
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100/80 text-emerald-800 text-[11px] font-bold mb-1.5">
+                <GraduationCap className="w-3.5 h-3.5 text-emerald-700" />
+                <span>ระดับชั้นมัธยมศึกษาตอนปลาย (ม.4 - ม.6)</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
+                <BookOpen className="w-6 h-6 text-emerald-600" />
+                <span>คลังบทเรียนภูมิศาสตร์สิ่งแวดล้อม ม.ปลาย</span>
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                ศึกษาบทเรียนสาระภูมิศาสตร์ ม.ปลาย (ส 5.1 & ส 5.2) ทำแบบทดสอบวัดผล และฝึกคิดวิพากษ์กับ Eco bot
+              </p>
             </div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
-              <BookOpen className="w-6 h-6 text-emerald-600" />
-              <span>คลังบทเรียนภูมิศาสตร์สิ่งแวดล้อม ม.ปลาย</span>
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              ศึกษาบทเรียนที่ออกแบบตามหลักสูตร ม.ปลาย ทำแบบทดสอบวัดผลการเรียนรู้ และฝึกคิดวิพากษ์กับ Eco bot
-            </p>
           </div>
 
           {/* Search bar */}

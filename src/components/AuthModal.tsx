@@ -241,7 +241,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     quickSwitchUser('usr_admin');
                     onClose();
                   }}
-                  className="p-1.5 text-left rounded-lg bg-slate-50 hover:bg-purple-50 text-slate-700 hover:text-purple-900 border border-slate-200"
+                  className="p-1.5 text-left rounded-lg bg-slate-50 hover:bg-teal-50 text-slate-700 hover:text-teal-900 border border-slate-200"
                 >
                   👑 <strong>แอดมิน (admin)</strong>
                 </button>

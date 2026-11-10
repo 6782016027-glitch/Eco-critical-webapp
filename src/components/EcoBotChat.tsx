@@ -21,6 +21,7 @@ import {
 import { CASE_STUDIES, CaseStudy } from '../data/caseStudies';
 import { sendEcoBotMessage } from '../services/aiService';
 import { usePortal } from '../context/PortalContext';
+import thaiStudentsPm25HeroImg from '../assets/images/thai_students_pm25_hero_1794307880360.jpg';
 interface Message {
   role: 'user' | 'model';
   content: string;
@@ -39,14 +40,14 @@ export const EcoBotChat: React.FC<EcoBotChatProps> = ({
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'model',
-      content: `สวัสดีครับ! ผมคือ **Eco bot** ผู้ช่วยสืบค้นและเรียนรู้ในห้องเรียนภูมิศาสตร์ "Eco-critical" 🌿\n\nผมพร้อมชวนทุกคนสืบเสาะและคิดวิพากษ์เรื่อง **มลพิษทางอากาศและฝุ่น PM2.5** ทั้งมิติวิทยาศาสตร์บรรยากาศ ภูมิประเทศแอ่งกระทะ อุณหภูมิผกผัน ไปจนถึงโครงสร้างเศรษฐกิจการเมือง เกษตรพันธสัญญา และความยุติธรรมทางสิ่งแวดล้อม สำหรับนักเรียนชั้น ม.ปลาย ครับ!\n\nคุณสามารถพิมพ์ถามข้อสงสัย สมมติฐาน หรือเลือกหัวข้อชวนคิดด้านล่างเพื่อเริ่มสนทนาได้เลยครับ`,
+      content: `สวัสดีครับ! ผมคือ **Eco bot** ผู้ช่วยสืบค้นและเรียนรู้ในห้องเรียนภูมิศาสตร์สิ่งแวดล้อม "Eco-critical" 🌿\n\nผมพร้อมชวนทุกคนสืบเสาะและคิดวิพากษ์เรื่อง **มลพิษทางอากาศและวิกฤตฝุ่น PM2.5** ตามหลักสูตรแกนกลางสาระภูมิศาสตร์ ม.ปลาย ทั้งมิติภูมิสารสนเทศ (GIS/Remote Sensing), ธรณีสัณฐานแอ่งที่ราบระหว่างภูเขา, สภาพบรรยากาศภาคและอุณหภูมิผกผัน (มาตรฐาน ส 5.1) ไปจนถึงปฏิสัมพันธ์มนุษย์กับการใช้ที่ดิน หมอกควันข้ามแดน และการจัดการสิ่งแวดล้อมเพื่อการพัฒนาที่ยั่งยืน (มาตรฐาน ส 5.2) ครับ!\n\nพิมพ์ข้อสงสัย ข้อค้นพบ หรือเลือกประเด็นชวนคิดเพื่อเริ่มต้นเรียนรู้ได้เลยครับ!`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
 
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [chatMode, setChatMode] = useState<'socratic' | 'case_study' | 'general' | 'evaluate'>('socratic');
+  const [chatMode, setChatMode] = useState<'inquiry' | 'case_study' | 'general' | 'evaluate'>('inquiry');
   const [selectedCase, setSelectedCase] = useState<CaseStudy | null>(initialCaseStudy || null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -213,9 +214,14 @@ export const EcoBotChat: React.FC<EcoBotChatProps> = ({
       {/* Bot Header Card - Calm Green & Sky */}
       <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-sky-500 p-0.5 shadow-sm shrink-0">
-            <div className="w-full h-full bg-white rounded-[14px] flex items-center justify-center">
-              <Bot className="w-7 h-7 text-emerald-600 animate-pulse" />
+          <div className="relative shrink-0">
+            <img
+              src={thaiStudentsPm25HeroImg}
+              alt="นักเรียนมัธยมไทยร่วมกับ Eco bot"
+              className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl object-cover border-2 border-emerald-300 shadow-2xs"
+            />
+            <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-xs border-2 border-white">
+              <Bot className="w-4 h-4" />
             </div>
           </div>
           <div>
@@ -228,7 +234,7 @@ export const EcoBotChat: React.FC<EcoBotChatProps> = ({
               </span>
             </div>
             <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-              กระตุ้นการคิดวิพากษ์ (Socratic Inquiry) • วิเคราะห์ปัจจัยภูมิศาสตร์และนโยบาย • ตั้งคำถามท้าทายสมมติฐาน
+              กระตุ้นการคิดวิพากษ์เชิงลึก • วิเคราะห์ปัจจัยภูมิศาสตร์และนโยบาย • เพื่อนร่วมคิดนักเรียน ม.ปลาย
             </p>
           </div>
         </div>
@@ -264,15 +270,15 @@ export const EcoBotChat: React.FC<EcoBotChatProps> = ({
 
           <div className="flex flex-wrap items-center gap-1.5 text-xs">
             <button
-              onClick={() => setChatMode('socratic')}
+              onClick={() => setChatMode('inquiry')}
               className={`px-3 py-1.5 rounded-xl font-medium transition-all flex items-center gap-1.5 ${
-                chatMode === 'socratic'
+                chatMode === 'inquiry'
                   ? 'bg-emerald-600 text-white font-bold shadow-xs'
                   : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200'
               }`}
             >
               <Sparkles className="w-3.5 h-3.5 text-yellow-200" />
-              <span>ชวนคิดวิพากษ์ (Socratic)</span>
+              <span>ชวนคิดวิพากษ์เชิงลึก</span>
             </button>
 
             <button

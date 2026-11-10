@@ -13,7 +13,6 @@ import {
   HelpCircle,
   MessageSquare,
   Sparkles,
-  Award,
   CheckCircle2,
   Clock,
   Compass,
@@ -23,10 +22,15 @@ import {
   ChevronRight,
   Shield,
   FileText,
+  TrendingUp,
 } from 'lucide-react';
 import { usePortal } from '../../context/PortalContext';
 import classroomBgImg from '../../assets/images/classroom_bg_1794300175352.jpg';
 import ecoLogoImg from '../../assets/images/ecocritical_logo_1794300369798.jpg';
+import ecoEnvHeroImg from '../../assets/images/eco_environment_hero_1794307274287.jpg';
+import thaiStudentsPm25HeroImg from '../../assets/images/thai_students_pm25_hero_1794307880360.jpg';
+import thaiStudentsPlantingImg from '../../assets/images/thai_students_planting_trees_1794307897081.jpg';
+import thaiStudentsBikeImg from '../../assets/images/thai_students_clean_air_bike_1794307914087.jpg';
 
 interface ClassroomHomeProps {
   onNavigateTab: (tab: 'home' | 'lessons' | 'cases' | 'forum' | 'simulator' | 'ecobot' | 'teacher_dashboard' | 'worksheets' | 'schedule') => void;
@@ -140,46 +144,87 @@ export const ClassroomHome: React.FC<ClassroomHomeProps> = ({
         )
       : 0;
 
+    const completionRate = totalLessons > 0 ? Math.min(100, Math.round((completedQuizzesCount / totalLessons) * 100)) : 0;
+
     return (
       <div className="space-y-8 animate-in fade-in duration-200">
-        {/* Welcome Banner - Pastel Mint & Sky */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-100/70 via-teal-50 to-sky-100/70 border border-emerald-200/60 p-6 sm:p-8 shadow-xs">
-          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-emerald-200/40 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 right-20 -mb-16 w-48 h-48 bg-sky-200/40 rounded-full blur-2xl pointer-events-none" />
-
-          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/80 backdrop-blur-xs border border-emerald-200 text-emerald-800 text-xs font-bold shadow-2xs">
-                <GraduationCap className="w-4 h-4 text-emerald-600" />
-                <span>ห้องเรียนภูมิศาสตร์สิ่งแวดล้อม ม.ปลาย (ม.4 - ม.6)</span>
-              </div>
-
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
-                ยินดีต้อนรับสู่ห้องเรียน, <span className="bg-gradient-to-r from-emerald-700 to-sky-700 bg-clip-text text-transparent">{currentUser.name}</span>
-              </h1>
-
-              <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
-                เข้าสู่ระบบในฐานะ <strong className="text-slate-800">{currentUser.role === 'student' ? 'นักเรียน' : currentUser.role === 'teacher' ? 'Teacher (ครู)' : 'ผู้ดูแลระบบ'}</strong> 
-                {currentUser.gradeClass && ` · ${currentUser.gradeClass}`} 
-                {currentUser.studentId && ` · รหัสประจำตัว: ${currentUser.studentId}`}
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2.5 shrink-0">
+        {/* Environmental Hero Visual Banner */}
+        <div className="relative overflow-hidden rounded-3xl bg-white border border-emerald-200/80 p-4 sm:p-6 shadow-xs space-y-5">
+          {/* Panoramic Environmental Illustration replacing the text banner */}
+          <div className="relative rounded-2xl overflow-hidden shadow-xs border border-emerald-100 group">
+            <img
+              src={thaiStudentsPm25HeroImg}
+              alt="นักเรียนมัธยมไทยใส่หน้ากากกันฝุ่น PM2.5 และสิ่งแวดล้อมสดใส (Thai High School Students)"
+              className="w-full h-48 sm:h-64 lg:h-72 object-cover object-center transition-transform duration-700 group-hover:scale-102"
+            />
+            {/* Action Buttons floating gracefully on top right */}
+            <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex items-center gap-2.5">
               <button
                 onClick={() => onNavigateTab('lessons')}
-                className="px-5 py-3 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs sm:text-sm shadow-sm transition-all hover:shadow-md flex items-center gap-2"
+                className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-700 to-teal-800 hover:from-emerald-800 hover:to-teal-900 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-emerald-950/20 transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2 cursor-pointer border border-emerald-500/30"
               >
                 <BookOpen className="w-4 h-4" />
                 <span>เข้าสู่บทเรียน ม.ปลาย</span>
               </button>
               <button
                 onClick={logout}
-                className="p-3 rounded-2xl bg-white/90 hover:bg-white text-slate-600 hover:text-rose-600 border border-slate-200/80 transition-colors shadow-2xs"
+                className="px-3.5 py-2.5 rounded-2xl bg-white/95 hover:bg-rose-50 text-slate-700 hover:text-rose-600 border border-white/80 hover:border-rose-200 text-xs font-bold transition-all duration-200 hover:scale-105 active:scale-95 shadow-md flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
                 title="ออกจากระบบ"
               >
                 <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">ออกจากระบบ</span>
               </button>
+            </div>
+          </div>
+
+          {/* ======================================================== */}
+          {/* VISUAL PROGRESS TRACKING COMPONENT: LESSON COMPLETION     */}
+          {/* ======================================================== */}
+          <div className="relative z-10 mt-6 pt-5 border-t border-emerald-200/70">
+            {/* Header & Progress Bar */}
+            <div className="bg-white/85 backdrop-blur-xs rounded-2xl p-4 sm:p-5 border border-emerald-200/70 shadow-2xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                    <TrendingUp className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-xs sm:text-sm font-bold text-slate-900">
+                      ความก้าวหน้าการเรียนรู้ของคุณ (Learning Progress)
+                    </h2>
+                    <p className="text-[11px] text-slate-500">
+                      ประเมินจากการเรียนและทำแบบทดสอบท้ายบทเรียน ม.ปลาย
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-xs font-extrabold text-emerald-800 bg-emerald-100/90 px-2.5 py-1 rounded-full border border-emerald-300">
+                    {completionRate}% เสร็จสมบูรณ์
+                  </span>
+                  <span className="text-xs text-slate-600 font-semibold">
+                    ({completedQuizzesCount}/{totalLessons} บทเรียน)
+                  </span>
+                </div>
+              </div>
+
+              {/* Progress Track Bar */}
+              <div className="w-full bg-slate-100 rounded-full h-3.5 p-0.5 border border-emerald-200/60 overflow-hidden shadow-inner">
+                <div
+                  className="bg-gradient-to-r from-emerald-500 via-teal-500 to-sky-500 h-full rounded-full transition-all duration-700 shadow-xs"
+                  style={{ width: `${Math.max(4, completionRate)}%` }}
+                />
+              </div>
+
+              <div className="flex items-center justify-between text-[11px] text-slate-500 mt-2 font-medium">
+                <span>🌱 จุดเริ่มต้น</span>
+                <span>
+                  {completionRate === 100
+                    ? '🎉 ยอดเยี่ยม! ทำครบทุกบทเรียนแล้ว'
+                    : `อีก ${Math.max(0, totalLessons - completedQuizzesCount)} บทเพื่อพิชิตครบหลักสูตร`}
+                </span>
+                <span>🎓 สำเร็จหลักสูตร 100%</span>
+              </div>
             </div>
           </div>
         </div>
@@ -195,7 +240,7 @@ export const ClassroomHome: React.FC<ClassroomHomeProps> = ({
               </div>
             </div>
             <div className="text-2xl font-black text-slate-900">{totalLessons} บทเรียน</div>
-            <p className="text-[11px] text-emerald-700 mt-1 font-medium">ครอบคลุมวิทยาศาสตร์ & นิเวศวิทยา</p>
+            <p className="text-[11px] text-emerald-700 mt-1 font-medium">ครอบคลุมภูมิศาสตร์ ม.ปลาย (ส 5.1 & ส 5.2)</p>
           </div>
 
           {/* Card 2: Quizzes */}
@@ -242,6 +287,81 @@ export const ClassroomHome: React.FC<ClassroomHomeProps> = ({
             </div>
             <div className="text-2xl font-black text-slate-900">{forumTopics.length} ประเด็น</div>
             <p className="text-[11px] text-indigo-700 mt-1 font-medium">แลกเปลี่ยนความคิดเห็นกับเพื่อนๆ</p>
+          </div>
+        </div>
+
+        {/* Cute Eco-Friendly & Air Pollution Cartoon Feature Cards */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🌱</span>
+              <h2 className="text-base sm:text-lg font-black text-slate-900">
+                เรียนรู้และพิทักษ์สิ่งแวดล้อม (Eco-Friendly & Clean Air Cartoon Guide)
+              </h2>
+            </div>
+            <span className="text-xs font-bold text-emerald-800 bg-emerald-100/80 px-2.5 py-1 rounded-full border border-emerald-200">
+              สื่อการเรียนรู้ ม.ปลาย
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Cartoon Card 1: Thai Students Planting Trees */}
+            <div
+              onClick={() => onNavigateTab('lessons')}
+              className="bg-white rounded-3xl border border-emerald-200 overflow-hidden shadow-xs hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
+            >
+              <div className="relative h-48 sm:h-56 overflow-hidden">
+                <img
+                  src={thaiStudentsPlantingImg}
+                  alt="นักเรียนมัธยมไทยร่วมใจปลูกต้นไม้เพิ่มพื้นที่สีเขียว"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-emerald-600/90 backdrop-blur-xs text-white text-xs font-bold shadow-xs flex items-center gap-1.5">
+                  <span>🌱 เยาวชนไทยร่วมใจปลูกต้นไม้ • มาตรฐาน ส 5.2</span>
+                </span>
+              </div>
+              <div className="p-5 space-y-2">
+                <h3 className="font-extrabold text-slate-900 text-sm sm:text-base group-hover:text-emerald-700 transition-colors">
+                  การมีส่วนร่วมจัดการสิ่งแวดล้อม: เพิ่มพื้นที่สีเขียวฟื้นฟูธรรมชาติ
+                </h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  เรียนรู้การมีส่วนร่วมของเยาวชนในการอนุรักษ์ทรัพยากรธรรมชาติ การฟื้นฟูสิ่งแวดล้อม และการสร้างความสมดุลเชิงนิเวศในโรงเรียนและชุมชน
+                </p>
+                <div className="pt-2 flex items-center gap-1.5 text-xs font-bold text-emerald-700">
+                  <span>เข้าสู่บทเรียนภูมิศาสตร์สิ่งแวดล้อม</span>
+                  <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </div>
+            </div>
+
+            {/* Cartoon Card 2: Thai Students Cycling & Air Quality Monitoring */}
+            <div
+              onClick={() => onNavigateTab('simulator')}
+              className="bg-white rounded-3xl border border-sky-200 overflow-hidden shadow-xs hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
+            >
+              <div className="relative h-48 sm:h-56 overflow-hidden">
+                <img
+                  src={thaiStudentsBikeImg}
+                  alt="นักเรียนมัธยมไทยตรวจวัดคุณภาพอากาศและปั่นจักรยานสัญจรสะอาด"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-sky-600/90 backdrop-blur-xs text-white text-xs font-bold shadow-xs flex items-center gap-1.5">
+                  <span>🚴 สัญจรสะอาด & เครื่องมือตรวจวัด • มาตรฐาน ส 5.1</span>
+                </span>
+              </div>
+              <div className="p-5 space-y-2">
+                <h3 className="font-extrabold text-slate-900 text-sm sm:text-base group-hover:text-sky-700 transition-colors">
+                  นักสืบสวนภูมิศาสตร์: ตรวจวัดดัชนีอากาศ & วิถีชีวิตคาร์บอนต่ำ
+                </h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  ฝึกทักษะการใช้เครื่องมือทางภูมิศาสตร์อ่านค่าคุณภาพอากาศ (AQI) วิเคราะห์ความสัมพันธ์เชิงพื้นที่ และทดลองในห้องแล็บจำลองการผกผันอุณหภูมิ
+                </p>
+                <div className="pt-2 flex items-center gap-1.5 text-xs font-bold text-sky-700">
+                  <span>เปิดแล็บภูมิศาสตร์จำลองการผกผันอุณหภูมิ</span>
+                  <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -313,7 +433,7 @@ export const ClassroomHome: React.FC<ClassroomHomeProps> = ({
                   นัดหมายการอภิปรายสด
                 </h3>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  ปฏิทินตารางเวลาสัมมนาสด Socratic Dialogue ร่วมกับ Teacher (ครู) และเพื่อนร่วมชั้น
+                  ปฏิทินตารางเวลาสัมมนาสดแลกเปลี่ยนความคิดเห็นด้านสิ่งแวดล้อม ร่วมกับ Teacher (ครู) และเพื่อนร่วมชั้น
                 </p>
               </div>
               <div className="flex items-center gap-1 text-xs font-bold text-sky-700 group-hover:translate-x-1 transition-transform">
@@ -737,7 +857,7 @@ export const ClassroomHome: React.FC<ClassroomHomeProps> = ({
                   quickSwitchUser('usr_admin');
                   onNavigateTab('teacher_dashboard');
                 }}
-                className="p-2 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-900 font-bold text-left transition-colors flex items-center gap-1.5"
+                className="p-2 rounded-xl bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-950 font-bold text-left transition-colors flex items-center gap-1.5"
               >
                 <span>👑 ผู้ดูแลระบบ (admin)</span>
               </button>

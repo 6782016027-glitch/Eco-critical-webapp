@@ -98,21 +98,21 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Admin Executive Header */}
-      <div className="p-6 bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white rounded-3xl shadow-md relative overflow-hidden">
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 right-32 -mb-12 w-48 h-48 bg-emerald-500/20 rounded-full blur-2xl pointer-events-none" />
+      {/* Admin Executive Header - Pastel Green, Sky Blue & Clean White */}
+      <div className="p-6 bg-gradient-to-r from-emerald-100/90 via-teal-50 to-sky-100/90 text-slate-800 rounded-3xl border border-emerald-200/80 shadow-xs relative overflow-hidden">
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-emerald-200/40 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 right-32 -mb-12 w-48 h-48 bg-sky-200/40 rounded-full blur-2xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-xs border border-white/20 text-purple-200 text-xs font-bold">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 backdrop-blur-xs border border-emerald-200 text-emerald-800 text-xs font-bold shadow-2xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>แผงควบคุมระบบ (Admin / Teacher Dashboard)</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
               ระบบบริหารจัดการห้องเรียน & คลังปัญญาประดิษฐ์
             </h1>
-            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
               จัดการเนื้อหาบทเรียน ม.ปลาย, แบบทดสอบท้ายบท, อัปโหลดเอกสาร AI Knowledge Base, ตั้งค่าโมเดล AI และอนุมัติสิทธิ์นักเรียน
             </p>
           </div>
@@ -120,54 +120,56 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
           {onNavigateToStudentView && (
             <button
               onClick={onNavigateToStudentView}
-              className="px-4 py-2.5 rounded-2xl bg-white/15 hover:bg-white/25 border border-white/25 text-white font-bold text-xs sm:text-sm transition-all flex items-center gap-2 shadow-xs shrink-0 cursor-pointer"
+              className="px-4 py-2.5 rounded-2xl bg-white hover:bg-emerald-50 border border-emerald-200 text-emerald-900 font-bold text-xs sm:text-sm transition-all flex items-center gap-2 shadow-2xs shrink-0 cursor-pointer"
             >
-              <GraduationCap className="w-4 h-4 text-emerald-300" />
-              <span>ดูตัวอย่างห้องเรียนนักเรียน (Student View)</span>
+              <GraduationCap className="w-4 h-4 text-emerald-600" />
+              <span>เข้าสู่ห้องเรียนนักเรียน (Student Classroom)</span>
             </button>
           )}
         </div>
 
-        {/* 4 Quick Stat Pills */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6 pt-5 border-t border-white/10 text-xs">
-          <div className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-xs border border-white/10">
-            <span className="text-slate-300 block text-[11px]">นักเรียนทั้งหมด</span>
-            <div className="text-xl font-black mt-0.5 text-white">{totalStudentsCount} คน</div>
-            <span className="text-[10px] text-emerald-300 font-semibold">ระดับมัธยมศึกษาตอนปลาย</span>
+        {/* 4 Quick Stat Pills - Pastel Card Style */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6 pt-5 border-t border-emerald-200/70 text-xs">
+          <div className="p-3.5 rounded-2xl bg-white/90 backdrop-blur-xs border border-emerald-200/70 shadow-2xs">
+            <span className="text-slate-500 block text-[11px] font-semibold">นักเรียนทั้งหมด</span>
+            <div className="text-xl font-black mt-0.5 text-slate-900">{totalStudentsCount} คน</div>
+            <span className="text-[10px] text-emerald-700 font-semibold">ระดับมัธยมศึกษาตอนปลาย</span>
           </div>
 
           <div
             onClick={() => setActiveTab('users')}
-            className={`p-3.5 rounded-2xl backdrop-blur-xs border transition-colors cursor-pointer ${
+            className={`p-3.5 rounded-2xl backdrop-blur-xs border transition-colors cursor-pointer shadow-2xs ${
               pendingStudentsCount > 0
-                ? 'bg-amber-500/20 border-amber-400/50 hover:bg-amber-500/30'
-                : 'bg-white/10 border-white/10'
+                ? 'bg-amber-50/95 border-amber-300 hover:bg-amber-100/90'
+                : 'bg-white/90 border-emerald-200/70 hover:bg-white'
             }`}
           >
-            <span className="text-slate-300 block text-[11px]">รออนุมัติเข้าเรียน</span>
-            <div className="text-xl font-black mt-0.5 text-amber-300 flex items-center gap-1.5">
-              <span>{pendingStudentsCount} บัญชี</span>
-              {pendingStudentsCount > 0 && <span className="text-[10px] bg-amber-400 text-amber-950 px-1.5 py-0.5 rounded-full font-bold">ต้องตรวจ</span>}
+            <span className="text-slate-500 block text-[11px] font-semibold">รออนุมัติเข้าเรียน</span>
+            <div className="text-xl font-black mt-0.5 text-slate-900 flex items-center gap-1.5">
+              <span className={pendingStudentsCount > 0 ? 'text-amber-800' : 'text-slate-900'}>
+                {pendingStudentsCount} บัญชี
+              </span>
+              {pendingStudentsCount > 0 && <span className="text-[10px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded-full font-bold">ต้องตรวจ</span>}
             </div>
-            <span className="text-[10px] text-amber-200 font-medium">คลิกเพื่อจัดการผู้ใช้</span>
+            <span className="text-[10px] text-amber-700 font-medium">คลิกเพื่อจัดการผู้ใช้</span>
           </div>
 
           <div
             onClick={() => setActiveTab('lessons')}
-            className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-xs border border-white/10 hover:bg-white/15 transition-colors cursor-pointer"
+            className="p-3.5 rounded-2xl bg-white/90 backdrop-blur-xs border border-teal-200/70 hover:bg-white transition-colors cursor-pointer shadow-2xs"
           >
-            <span className="text-slate-300 block text-[11px]">บทเรียนในระบบ</span>
-            <div className="text-xl font-black mt-0.5 text-white">{lessons.length} บท</div>
-            <span className="text-[10px] text-purple-200 font-medium">คลิกเพื่อจัดการบทเรียน</span>
+            <span className="text-slate-500 block text-[11px] font-semibold">บทเรียนในระบบ</span>
+            <div className="text-xl font-black mt-0.5 text-slate-900">{lessons.length} บท</div>
+            <span className="text-[10px] text-teal-700 font-medium">คลิกเพื่อจัดการบทเรียน</span>
           </div>
 
           <div
             onClick={() => setActiveTab('knowledge')}
-            className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-xs border border-white/10 hover:bg-white/15 transition-colors cursor-pointer"
+            className="p-3.5 rounded-2xl bg-white/90 backdrop-blur-xs border border-sky-200/70 hover:bg-white transition-colors cursor-pointer shadow-2xs"
           >
-            <span className="text-slate-300 block text-[11px]">เอกสารใน AI Base</span>
-            <div className="text-xl font-black mt-0.5 text-white">{knowledgeDocs.length} ฉบับ</div>
-            <span className="text-[10px] text-teal-200 font-medium">{aiConfig.geminiModel}</span>
+            <span className="text-slate-500 block text-[11px] font-semibold">เอกสารใน AI Base</span>
+            <div className="text-xl font-black mt-0.5 text-slate-900">{knowledgeDocs.length} ฉบับ</div>
+            <span className="text-[10px] text-sky-700 font-medium">{aiConfig.geminiModel}</span>
           </div>
         </div>
       </div>

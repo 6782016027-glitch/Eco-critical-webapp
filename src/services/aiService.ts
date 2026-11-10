@@ -9,7 +9,7 @@ import { SYSTEM_INSTRUCTION_ECOBOT, generateSmartPedagogicalReply, generateCriti
 export interface ChatRequestOptions {
   message: string;
   history?: Array<{ role: 'user' | 'model'; content: string }>;
-  mode?: 'socratic' | 'case_study' | 'general' | 'evaluate';
+  mode?: 'inquiry' | 'case_study' | 'general' | 'evaluate';
   caseStudyContext?: {
     title?: string;
     period?: string;
@@ -27,7 +27,7 @@ export interface ChatRequestOptions {
  * or the pedagogical reasoning engine.
  */
 export async function sendEcoBotMessage(options: ChatRequestOptions): Promise<string> {
-  const { message, mode = 'socratic', caseStudyContext } = options;
+  const { message, mode = 'inquiry', caseStudyContext } = options;
 
   // 1. First attempt: call /api/chat backend endpoint
   try {
@@ -69,8 +69,8 @@ export async function sendEcoBotMessage(options: ChatRequestOptions): Promise<st
       });
 
       let systemPrompt = SYSTEM_INSTRUCTION_ECOBOT;
-      if (mode === 'socratic') {
-        systemPrompt += '\n\n[โหมดการคิดวิพากษ์ระดับลึก (Socratic Coach Mode)]: ชวนคิด 3 ระดับ: สาเหตุรากเหง้า, ความยุติธรรมสิ่งแวดล้อม, และทางเลือกนโยบาย';
+      if (mode === 'inquiry') {
+        systemPrompt += '\n\n[โหมดการคิดวิพากษ์ระดับลึก (Inquiry Coach Mode)]: ชวนคิด 3 ระดับ: สาเหตุรากเหง้า, ความยุติธรรมสิ่งแวดล้อม, และทางเลือกนโยบาย';
       } else if (mode === 'case_study' && caseStudyContext) {
         systemPrompt += `\n\n[โหมดวิเคราะห์กรณีศึกษา]: ${caseStudyContext.title} (${caseStudyContext.period}, ${caseStudyContext.location}). ปัจจัยภูมิศาสตร์: ${caseStudyContext.geography}`;
       } else if (mode === 'evaluate') {

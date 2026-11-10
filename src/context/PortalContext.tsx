@@ -36,6 +36,8 @@ interface PortalContextType {
   approveUser: (userId: string) => void;
   rejectUser: (userId: string) => void;
   updateUserRole: (userId: string, newRole: UserRole) => void;
+  deleteUser: (userId: string) => void;
+  addUser: (user: Omit<User, 'id' | 'registeredAt'>) => User;
 
   // Lessons
   lessons: Lesson[];
@@ -62,6 +64,7 @@ interface PortalContextType {
   // Forum
   forumTopics: ForumTopic[];
   addTopic: (data: { title: string; content: string; category: string; tags: string[] }) => void;
+  deleteTopic: (topicId: string) => void;
   addReply: (topicId: string, content: string) => void;
   toggleLikeTopic: (topicId: string) => void;
 }
@@ -72,6 +75,17 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Helpers to sanitize and replace legacy teacher names
   const sanitizeUsers = (rawUsers: User[]): User[] => {
     return rawUsers.map((u) => {
+      if (u.role === 'admin' || u.username === 'admin' || u.id === 'usr_admin') {
+        return {
+          ...u,
+          id: 'usr_admin',
+          username: 'admin',
+          password: 'admin123456789',
+          name: 'ผู้ดูแลระบบส่วนกลาง (Administrator)',
+          role: 'admin',
+          status: 'approved',
+        };
+      }
       if (u.role === 'teacher' || u.id === 'usr_teacher_somchai' || u.id === 'usr_teacher') {
         return {
           ...u,
@@ -86,26 +100,39 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const sanitizeLessons = (rawLessons: Lesson[]): Lesson[] => {
+    // If cached lessons contain old science curriculum, reset to pure Geography lessons
+    const hasOldScience = rawLessons.some(
+      (l) => l.title.includes('วิทยาศาสตร์') || l.category.includes('วิทยาศาสตร์')
+    );
+    if (hasOldScience) {
+      return INITIAL_LESSONS;
+    }
     return rawLessons.map((l) => ({
       ...l,
-      author: l.author.includes('สมชาย') ? 'Teacher (ครู)' : l.author,
+      author: l.author.includes('สมชาย') ? 'Teacher (ครูภูมิศาสตร์)' : l.author,
     }));
   };
 
   const sanitizeKnowledgeDocs = (rawDocs: KnowledgeDoc[]): KnowledgeDoc[] => {
+    const hasOldDoc = rawDocs.some(
+      (d) => d.id === 'doc_pcd_guideline' || d.title.includes('วิทยาการ')
+    );
+    if (hasOldDoc) {
+      return INITIAL_KNOWLEDGE_DOCS;
+    }
     return rawDocs.map((d) => ({
       ...d,
-      uploadedBy: d.uploadedBy.includes('สมชาย') ? 'Teacher (ครู)' : d.uploadedBy,
+      uploadedBy: d.uploadedBy.includes('สมชาย') ? 'Teacher (ครูภูมิศาสตร์)' : d.uploadedBy,
     }));
   };
 
   const sanitizeForumTopics = (rawTopics: ForumTopic[]): ForumTopic[] => {
     return rawTopics.map((t) => ({
       ...t,
-      authorName: t.authorName.includes('สมชาย') ? 'Teacher (ครู)' : t.authorName,
+      authorName: t.authorName.includes('สมชาย') ? 'Teacher (ครูภูมิศาสตร์)' : t.authorName,
       replies: t.replies.map((r) => ({
         ...r,
-        authorName: r.authorName.includes('สมชาย') ? 'Teacher (ครู)' : r.authorName,
+        authorName: r.authorName.includes('สมชาย') ? 'Teacher (ครูภูมิศาสตร์)' : r.authorName,
       })),
     }));
   };
@@ -199,6 +226,38 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Auth Functions
   const login = (username: string, password: string) => {
     const cleanUser = username.trim().toLowerCase();
+    const cleanPass = password.trim();
+
+    // Explicit Admin Hardcoded Credentials check: admin / admin123456789
+    if (cleanUser === 'admin') {
+      if (cleanPass === 'admin123456789' || cleanPass === 'Admin12345678') {
+        let adminUser = users.find((u) => u.username.toLowerCase() === 'admin' || u.role === 'admin');
+        if (!adminUser) {
+          adminUser = {
+            id: 'usr_admin',
+            username: 'admin',
+            password: 'admin123456789',
+            name: 'ผู้ดูแลระบบส่วนกลาง (Administrator)',
+            role: 'admin',
+            status: 'approved',
+            email: 'admin@eco-critical.edu',
+            registeredAt: '2026-11-01T08:00:00Z',
+          };
+        } else {
+          adminUser = {
+            ...adminUser,
+            password: 'admin123456789',
+            role: 'admin',
+            status: 'approved',
+          };
+        }
+        setCurrentUser(adminUser);
+        return { success: true, message: 'เข้าสู่ระบบในฐานะผู้ดูแลระบบ (Admin) สำเร็จ', user: adminUser };
+      } else {
+        return { success: false, message: 'รหัสผ่านแอดมินไม่ถูกต้อง (ใช้รหัสผ่าน: admin123456789)' };
+      }
+    }
+
     const found = users.find(
       (u) =>
         u.username.toLowerCase() === cleanUser ||
@@ -305,6 +364,20 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (currentUser?.id === userId) {
       setCurrentUser((prev) => (prev ? { ...prev, role: newRole } : null));
     }
+  };
+
+  const deleteUser = (userId: string) => {
+    setUsers((prev) => prev.filter((u) => u.id !== userId));
+  };
+
+  const addUser = (userData: Omit<User, 'id' | 'registeredAt'>): User => {
+    const newUser: User = {
+      ...userData,
+      id: `usr_${Date.now()}`,
+      registeredAt: new Date().toISOString(),
+    };
+    setUsers((prev) => [newUser, ...prev]);
+    return newUser;
   };
 
   // Lesson Management
@@ -621,6 +694,10 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     );
   };
 
+  const deleteTopic = (topicId: string) => {
+    setForumTopics((prev) => prev.filter((t) => t.id !== topicId));
+  };
+
   return (
     <PortalContext.Provider
       value={{
@@ -633,6 +710,8 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         approveUser,
         rejectUser,
         updateUserRole,
+        deleteUser,
+        addUser,
         lessons,
         addLesson,
         updateLesson,
@@ -651,6 +730,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         testAiConnection,
         forumTopics,
         addTopic,
+        deleteTopic,
         addReply,
         toggleLikeTopic,
       }}

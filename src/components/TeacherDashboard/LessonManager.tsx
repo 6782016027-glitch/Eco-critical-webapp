@@ -34,7 +34,7 @@ export const LessonManager: React.FC = () => {
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('วิทยาศาสตร์บรรยากาศ');
+  const [category, setCategory] = useState('ภูมิสารสนเทศและเครื่องมือทางภูมิศาสตร์');
   const [level, setLevel] = useState('มัธยมศึกษาตอนปลาย');
   const [duration, setDuration] = useState('45 นาที');
   const [coverUrl, setCoverUrl] = useState('');
@@ -57,7 +57,7 @@ export const LessonManager: React.FC = () => {
     setTitle('');
     setSubtitle('');
     setDescription('');
-    setCategory('วิทยาศาสตร์บรรยากาศ');
+    setCategory('ภูมิสารสนเทศและเครื่องมือทางภูมิศาสตร์');
     setLevel('มัธยมศึกษาตอนปลาย');
     setDuration('45 นาที');
     setCoverUrl('https://images.unsplash.com/photo-1534088568595-a066f410bcda?w=800');
@@ -332,10 +332,10 @@ export const LessonManager: React.FC = () => {
                         onChange={(e) => setCategory(e.target.value)}
                         className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500"
                       >
-                        <option value="วิทยาศาสตร์บรรยากาศ">วิทยาศาสตร์บรรยากาศ</option>
-                        <option value="ภูมิศาสตร์กายภาพ">ภูมิศาสตร์กายภาพ</option>
-                        <option value="ภูมิศาสตร์มนุษย์และเศรษฐกิจ">ภูมิศาสตร์มนุษย์และเศรษฐกิจ</option>
-                        <option value="นโยบายและกฎหมาย">นโยบายและกฎหมาย</option>
+                        <option value="ภูมิสารสนเทศและเครื่องมือทางภูมิศาสตร์">ภูมิสารสนเทศและเครื่องมือทางภูมิศาสตร์ (ส 5.1)</option>
+                        <option value="ภูมิศาสตร์กายภาพ">ภูมิศาสตร์กายภาพและบรรยากาศ (ส 5.1)</option>
+                        <option value="ภูมิศาสตร์มนุษย์และสิ่งแวดล้อม">ภูมิศาสตร์มนุษย์และสิ่งแวดล้อม (ส 5.2)</option>
+                        <option value="การจัดการภัยพิบัติและการพัฒนาที่ยั่งยืน">การจัดการภัยพิบัติและการพัฒนาที่ยั่งยืน (ส 5.2)</option>
                       </select>
                     </div>
 

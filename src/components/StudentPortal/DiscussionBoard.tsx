@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { usePortal } from '../../context/PortalContext';
 import { ForumTopic } from '../../types/portal';
+import thaiStudentsBikeImg from '../../assets/images/thai_students_clean_air_bike_1794307914087.jpg';
 import {
   MessageSquare,
   Plus,
@@ -44,7 +45,7 @@ export const DiscussionBoard: React.FC = () => {
     { id: 'all', label: 'ทั้งหมด' },
     { id: 'การคิดวิพากษ์เชิงนโยบาย', label: 'การคิดวิพากษ์เชิงนโยบาย' },
     { id: 'ความยุติธรรมทางสิ่งแวดล้อม', label: 'ความยุติธรรมทางสิ่งแวดล้อม' },
-    { id: 'วิทยาศาสตร์บรรยากาศ', label: 'วิทยาศาสตร์บรรยากาศ' },
+    { id: 'ภูมิสารสนเทศและภูมิศาสตร์กายภาพ', label: 'ภูมิสารสนเทศ & ภูมิศาสตร์กายภาพ' },
     { id: 'ถาม-ตอบข้อสงสัยการบ้าน', label: 'ถาม-ตอบข้อสงสัยการบ้าน' },
   ];
 
@@ -102,14 +103,21 @@ export const DiscussionBoard: React.FC = () => {
     <div className="space-y-6">
       {/* Top Banner & Action */}
       <div className="p-6 bg-white border border-slate-200 rounded-3xl shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
-            <MessageSquare className="w-6 h-6 text-emerald-600" />
-            <span>เว็บบอร์ดแลกเปลี่ยนเรียนรู้ (Environmental Geography Forum)</span>
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            พื้นที่อภิปราย ถกเถียงเชิงวิพากษ์ และถาม-ตอบระหว่างนักเรียน Teacher (ครู) และผู้ช่วยวิจัย
-          </p>
+        <div className="flex items-center gap-4">
+          <img
+            src={thaiStudentsBikeImg}
+            alt="นักเรียนมัธยมไทยร่วมอภิปรายแลกเปลี่ยนความรู้"
+            className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border-2 border-emerald-200 shadow-2xs shrink-0"
+          />
+          <div>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
+              <MessageSquare className="w-6 h-6 text-emerald-600" />
+              <span>เว็บบอร์ดแลกเปลี่ยนเรียนรู้ (Environmental Geography Forum)</span>
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+              พื้นที่อภิปราย ถกเถียงเชิงวิพากษ์ และถาม-ตอบระหว่างนักเรียน Teacher (ครู) และผู้ช่วยวิจัย
+            </p>
+          </div>
         </div>
 
         <button
@@ -417,7 +425,7 @@ export const DiscussionBoard: React.FC = () => {
                 >
                   <option value="การคิดวิพากษ์เชิงนโยบาย">การคิดวิพากษ์เชิงนโยบาย</option>
                   <option value="ความยุติธรรมทางสิ่งแวดล้อม">ความยุติธรรมทางสิ่งแวดล้อม</option>
-                  <option value="วิทยาศาสตร์บรรยากาศ">วิทยาศาสตร์บรรยากาศ</option>
+                  <option value="ภูมิสารสนเทศและภูมิศาสตร์กายภาพ">ภูมิสารสนเทศและภูมิศาสตร์กายภาพ</option>
                   <option value="ถาม-ตอบข้อสงสัยการบ้าน">ถาม-ตอบข้อสงสัยการบ้าน</option>
                 </select>
               </div>

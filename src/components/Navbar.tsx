@@ -64,14 +64,14 @@ export const Navbar: React.FC<NavbarProps> = ({
           !currentUser
             ? 'bg-gradient-to-r from-emerald-50 via-teal-50 to-sky-50 text-emerald-900 border-emerald-100/70'
             : isTeacherOrAdmin
-            ? 'bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-purple-100 border-purple-800'
+            ? 'bg-gradient-to-r from-emerald-100/90 via-teal-50 to-sky-100/90 text-emerald-950 border-emerald-200'
             : 'bg-gradient-to-r from-emerald-50 via-teal-50 to-sky-50 text-emerald-900 border-emerald-100/70'
         }`}
       >
         <div className="flex items-center gap-2 max-w-7xl mx-auto w-full">
           <span
             className={`flex h-2 w-2 rounded-full animate-pulse ${
-              isTeacherOrAdmin ? 'bg-amber-400' : 'bg-emerald-500'
+              isTeacherOrAdmin ? 'bg-emerald-600' : 'bg-emerald-500'
             }`}
           />
           <span className="font-semibold text-[11px] sm:text-xs">
@@ -88,7 +88,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={onOpenEtiquetteModal}
                 className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full border transition-colors cursor-pointer ${
                   isTeacherOrAdmin
-                    ? 'bg-white/10 hover:bg-white/20 text-purple-200 border-purple-400/40'
+                    ? 'bg-white/80 hover:bg-white text-emerald-900 border-emerald-300'
                     : 'bg-emerald-100/80 hover:bg-emerald-200 text-emerald-800 border-emerald-300'
                 }`}
                 title="คลิกเพื่ออ่านกฎกติกาและมารยาทการอภิปราย"
@@ -100,7 +100,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span
               className={`hidden md:inline-block font-bold text-[11px] px-2 py-0.5 rounded-full border ${
                 isTeacherOrAdmin
-                  ? 'bg-amber-400/20 text-amber-300 border-amber-400/40'
+                  ? 'bg-emerald-200/70 text-emerald-950 border-emerald-300'
                   : 'bg-sky-100/60 text-sky-800 border-sky-200'
               }`}
             >
@@ -134,7 +134,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span
                 className={`text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full border ${
                   isTeacherOrAdmin
-                    ? 'bg-purple-100 text-purple-800 border-purple-300'
+                    ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
                     : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                 }`}
               >
@@ -159,46 +159,31 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>🔒 กรุณาเข้าสู่ระบบก่อนเข้าดูเนื้อหา</span>
             </span>
           </div>
-        ) : isTeacherOrAdmin ? (
-          /* ================= ADMIN & TEACHER NAV TABS ================= */
-          <nav className="flex items-center gap-1.5 overflow-x-auto py-1">
-            <button
-              onClick={() => setActiveTab('teacher_dashboard')}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all shadow-xs ${
-                activeTab === 'teacher_dashboard'
-                  ? 'bg-purple-700 text-white shadow-purple-600/20 ring-2 ring-purple-300'
-                  : 'bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200'
-              }`}
-            >
-              <Shield className="w-4 h-4 text-purple-600" />
+        ) : isTeacherOrAdmin && activeTab === 'teacher_dashboard' ? (
+          /* ================= DEDICATED ADMIN / TEACHER DASHBOARD VIEW ================= */
+          <nav className="flex items-center gap-2 overflow-x-auto py-1">
+            <div className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-emerald-700 text-white shadow-emerald-700/20 ring-2 ring-emerald-300">
+              <Shield className="w-4 h-4 text-white" />
               <span>แดชบอร์ดจัดการระบบ (Admin Dashboard)</span>
-            </button>
+            </div>
 
             <button
               onClick={() => setActiveTab('home')}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-                activeTab === 'home'
-                  ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold shadow-2xs'
-                  : 'text-slate-600 hover:text-emerald-800 hover:bg-emerald-50'
-              }`}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-900 border border-slate-200 transition-all cursor-pointer shadow-2xs"
             >
               <GraduationCap className="w-4 h-4 text-emerald-600" />
-              <span>ดูตัวอย่างห้องเรียนนักเรียน (Student View)</span>
+              <span>เข้าสู่ห้องเรียนนักเรียน (Student Classroom)</span>
             </button>
 
             {/* Quick alert badge for pending students */}
             {users.filter((u) => u.status === 'pending').length > 0 && (
-              <button
-                onClick={() => setActiveTab('teacher_dashboard')}
-                className="hidden xl:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-bold animate-pulse"
-                title="คลิกเพื่อไปที่เมนูจัดการผู้ใช้"
-              >
+              <span className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-bold animate-pulse">
                 <span>⚠️ รออนุมัติ {users.filter((u) => u.status === 'pending').length} คน</span>
-              </button>
+              </span>
             )}
           </nav>
         ) : (
-          /* ================= STUDENT EXCLUSIVE NAV TABS ================= */
+          /* ================= STUDENT VIEW TABS ================= */
           <nav className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto py-1">
             {/* 1. Home / Student Classroom Hub */}
             <button
@@ -210,7 +195,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <GraduationCap className="w-4 h-4 text-emerald-600" />
-              <span>ห้องเรียนของฉัน</span>
+              <span>ห้องเรียนภูมิศาสตร์สิ่งแวดล้อม</span>
             </button>
 
             {/* 2. Lessons & Quizzes */}
@@ -303,6 +288,18 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Bot className="w-4 h-4" />
               <span>Eco bot สืบค้น</span>
             </button>
+
+            {/* Admin Switcher in Student View */}
+            {isTeacherOrAdmin && (
+              <button
+                onClick={() => setActiveTab('teacher_dashboard')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-100/90 hover:bg-emerald-200 text-emerald-950 text-xs font-bold border border-emerald-300 shadow-2xs transition-colors shrink-0 cursor-pointer ml-1"
+                title="กลับไปยังแดชบอร์ดจัดการระบบ"
+              >
+                <Shield className="w-3.5 h-3.5 text-emerald-700" />
+                <span>กลับสู่แดชบอร์ดแอดมิน</span>
+              </button>
+            )}
           </nav>
         )}
 
@@ -317,7 +314,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <div
                   className={`w-7 h-7 rounded-xl flex items-center justify-center font-bold text-xs ${
                     currentUser.role === 'admin'
-                      ? 'bg-purple-600 text-white'
+                      ? 'bg-teal-700 text-white'
                       : currentUser.role === 'teacher'
                       ? 'bg-emerald-600 text-white'
                       : 'bg-sky-600 text-white'
@@ -332,7 +329,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
                   <div className="text-[10px] font-semibold text-slate-500 flex items-center gap-1">
                     {currentUser.role === 'admin' && (
-                      <span className="text-purple-700 font-bold">ผู้ดูแลระบบ (Admin)</span>
+                      <span className="text-teal-800 font-bold">ผู้ดูแลระบบ (Admin)</span>
                     )}
                     {currentUser.role === 'teacher' && (
                       <span className="text-emerald-700 font-bold">Teacher (ครู)</span>
@@ -369,10 +366,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                           setActiveTab('teacher_dashboard');
                           setShowUserDropdown(false);
                         }}
-                        className="w-full text-left p-1.5 rounded-lg hover:bg-purple-50 text-purple-900 flex items-center justify-between"
+                        className="w-full text-left p-1.5 rounded-lg hover:bg-teal-50 text-teal-950 flex items-center justify-between"
                       >
                         <span>👑 แอดมิน (admin)</span>
-                        {currentUser.username === 'admin' && <span className="text-[10px] font-bold text-purple-700">ใช้งานอยู่</span>}
+                        {currentUser.username === 'admin' && <span className="text-[10px] font-bold text-teal-700">ใช้งานอยู่</span>}
                       </button>
 
                       <button
@@ -409,13 +406,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                           setActiveTab('teacher_dashboard');
                           setShowUserDropdown(false);
                         }}
-                        className="w-full text-left p-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-900 font-bold flex items-center justify-between border border-purple-200 transition-colors"
+                        className="w-full text-left p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-950 font-bold flex items-center justify-between border border-emerald-200 transition-colors"
                       >
                         <span className="flex items-center gap-1.5">
-                          <Shield className="w-4 h-4 text-purple-600" />
+                          <Shield className="w-4 h-4 text-emerald-700" />
                           <span>แดชบอร์ดจัดการระบบ (ครู/แอดมิน)</span>
                         </span>
-                        <ChevronRight className="w-3.5 h-3.5 text-purple-500" />
+                        <ChevronRight className="w-3.5 h-3.5 text-emerald-600" />
                       </button>
                     </div>
                   )}
