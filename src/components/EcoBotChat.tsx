@@ -1,8 +1,26 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, Send, Sparkles, Volume2, VolumeX, Trash2, BookOpen, Scale, Lightbulb, AlertCircle, Key, Check, ExternalLink, X, ShieldCheck } from 'lucide-react';
+import {
+  Bot,
+  Send,
+  Sparkles,
+  Volume2,
+  VolumeX,
+  Trash2,
+  BookOpen,
+  Scale,
+  Lightbulb,
+  AlertCircle,
+  Key,
+  Check,
+  ExternalLink,
+  X,
+  ShieldCheck,
+  Bookmark,
+  FileText,
+} from 'lucide-react';
 import { CASE_STUDIES, CaseStudy } from '../data/caseStudies';
 import { sendEcoBotMessage } from '../services/aiService';
-
+import { usePortal } from '../context/PortalContext';
 interface Message {
   role: 'user' | 'model';
   content: string;
@@ -21,7 +39,7 @@ export const EcoBotChat: React.FC<EcoBotChatProps> = ({
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'model',
-      content: `สวัสดีครับ! ผมคือ **Eco bot** ผู้ช่วยสอนปัญญาประดิษฐ์ในห้องเรียนภูมิศาสตร์ "Eco-critical" 🌿\n\nผมพร้อมชวนทุกคนสืบเสาะและคิดวิพากษ์เรื่อง **มลพิษทางอากาศและฝุ่น PM2.5** ทั้งมิติวิทยาศาสตร์บรรยากาศ ภูมิประเทศแอ่งกระทะ อุณหภูมิผกผัน ไปจนถึงโครงสร้างเศรษฐกิจการเมือง เกษตรพันธสัญญา และความยุติธรรมทางสิ่งแวดล้อม\n\nคุณสามารถเลือกถามคำถาม เลือกหัวข้อชวนคิด หรือลองตอบคำถามนำด้านล่างนี้ได้เลยครับ!`,
+      content: `สวัสดีครับ! ผมคือ **Eco bot** ผู้ช่วยสืบค้นและเรียนรู้ในห้องเรียนภูมิศาสตร์ "Eco-critical" 🌿\n\nผมพร้อมชวนทุกคนสืบเสาะและคิดวิพากษ์เรื่อง **มลพิษทางอากาศและฝุ่น PM2.5** ทั้งมิติวิทยาศาสตร์บรรยากาศ ภูมิประเทศแอ่งกระทะ อุณหภูมิผกผัน ไปจนถึงโครงสร้างเศรษฐกิจการเมือง เกษตรพันธสัญญา และความยุติธรรมทางสิ่งแวดล้อม สำหรับนักเรียนชั้น ม.ปลาย ครับ!\n\nคุณสามารถพิมพ์ถามข้อสงสัย สมมติฐาน หรือเลือกหัวข้อชวนคิดด้านล่างเพื่อเริ่มสนทนาได้เลยครับ`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -333,6 +351,8 @@ export const EcoBotChat: React.FC<EcoBotChatProps> = ({
                     {msg.content}
                   </div>
 
+
+
                   <div className={`flex items-center justify-between gap-3 mt-2 pt-1 border-t text-[10px] ${
                     isUser ? 'border-white/20 text-emerald-100' : 'border-slate-100 text-slate-400'
                   }`}>
@@ -548,6 +568,8 @@ export const EcoBotChat: React.FC<EcoBotChatProps> = ({
           </div>
         </div>
       )}
+
+
     </div>
   );
 };
