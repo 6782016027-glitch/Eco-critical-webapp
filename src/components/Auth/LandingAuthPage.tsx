@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 
 export const LandingAuthPage: React.FC = () => {
-  const { login, register } = usePortal();
+  const { login, register, previewStudentLogin } = usePortal();
 
   // Primary Role Selector: Student vs Admin
   const [selectedRole, setSelectedRole] = useState<'student' | 'admin'>('student');
@@ -35,7 +35,8 @@ export const LandingAuthPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [studentId, setStudentId] = useState('');
-  const [gradeClass, setGradeClass] = useState('มัธยมศึกษาปีที่ 5/1');
+  const [gradeClass, setGradeClass] = useState('ม.4/1');
+  const [seatNumber, setSeatNumber] = useState('1');
 
   // Feedback states
   const [errorMessage, setErrorMessage] = useState('');
@@ -92,6 +93,7 @@ export const LandingAuthPage: React.FC = () => {
       password: password.trim(),
       studentId: studentId.trim() || undefined,
       gradeClass: gradeClass.trim() || undefined,
+      seatNumber: seatNumber || '1',
     });
 
     if (res.success) {
@@ -329,6 +331,26 @@ export const LandingAuthPage: React.FC = () => {
                       <LogIn className="w-4 h-4" />
                       <span>เข้าสู่ห้องเรียนนักเรียน (Student View)</span>
                     </button>
+
+                    {/* Quick Preview Button for Student View */}
+                    <div className="pt-2">
+                      <div className="relative flex py-1 items-center">
+                        <div className="flex-grow border-t border-slate-200"></div>
+                        <span className="shrink mx-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                          หรือทดลองใช้งาน
+                        </span>
+                        <div className="flex-grow border-t border-slate-200"></div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => previewStudentLogin()}
+                        className="w-full mt-1.5 py-3 px-4 rounded-2xl bg-gradient-to-r from-teal-50 via-emerald-50 to-sky-50 hover:from-teal-100 hover:to-emerald-100 text-emerald-900 border-2 border-emerald-300 font-extrabold text-xs sm:text-sm shadow-xs transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer group"
+                      >
+                        <Sparkles className="w-4 h-4 text-emerald-600 group-hover:rotate-12 transition-transform" />
+                        <span>ดูตัวอย่างหน้าเว็บนักเรียน (Student Preview / Demo Mode)</span>
+                      </button>
+                    </div>
                   </form>
                 ) : (
                   /* Student Register Form */
@@ -350,33 +372,61 @@ export const LandingAuthPage: React.FC = () => {
                     <div className="grid grid-cols-2 gap-2.5">
                       <div>
                         <label className="block text-xs font-bold text-slate-700 mb-1">
-                          รหัสนักเรียน
-                        </label>
-                        <input
-                          type="text"
-                          value={studentId}
-                          onChange={(e) => setStudentId(e.target.value)}
-                          placeholder="STD-6709"
-                          className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm bg-white"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">
-                          ระดับชั้น
+                          ระดับชั้น (39 ห้องเรียน) *
                         </label>
                         <select
                           value={gradeClass}
                           onChange={(e) => setGradeClass(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm bg-white"
+                          className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm bg-white font-medium"
                         >
-                          <option value="มัธยมศึกษาปีที่ 4/1">ม.4/1</option>
-                          <option value="มัธยมศึกษาปีที่ 4/2">ม.4/2</option>
-                          <option value="มัธยมศึกษาปีที่ 5/1">ม.5/1</option>
-                          <option value="มัธยมศึกษาปีที่ 5/2">ม.5/2</option>
-                          <option value="มัธยมศึกษาปีที่ 6/1">ม.6/1</option>
-                          <option value="มัธยมศึกษาปีที่ 6/2">ม.6/2</option>
+                          {[4, 5, 6].map((grade) => (
+                            <optgroup
+                              key={grade}
+                              label={`ม.${grade}/1 ถึง ม.${grade}/13`}
+                            >
+                              {Array.from({ length: 13 }, (_, i) => {
+                                const room = i + 1;
+                                const roomCode = `ม.${grade}/${room}`;
+                                return (
+                                  <option key={`${grade}-${room}`} value={roomCode}>
+                                    {roomCode}
+                                  </option>
+                                );
+                              })}
+                            </optgroup>
+                          ))}
                         </select>
                       </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          เลขที่ (1-50) *
+                        </label>
+                        <select
+                          value={seatNumber}
+                          onChange={(e) => setSeatNumber(e.target.value)}
+                          className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm bg-white font-medium"
+                        >
+                          {Array.from({ length: 50 }, (_, i) => i + 1).map((num) => (
+                            <option key={num} value={String(num)}>
+                              {num}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        รหัสนักเรียน (ถ้ามี)
+                      </label>
+                      <input
+                        type="text"
+                        value={studentId}
+                        onChange={(e) => setStudentId(e.target.value)}
+                        placeholder="เช่น STD-6709 (หากไม่กรอก ระบบจะสร้างรหัสให้อัตโนมัติ)"
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm bg-white font-mono"
+                      />
                     </div>
 
                     <div>

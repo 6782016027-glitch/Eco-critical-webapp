@@ -9,6 +9,7 @@ import { LessonManager } from '../TeacherDashboard/LessonManager';
 import { KnowledgeBaseManager } from '../TeacherDashboard/KnowledgeBaseManager';
 import { AiSettingsManager } from '../TeacherDashboard/AiSettingsManager';
 import { UserManager } from '../TeacherDashboard/UserManager';
+import { StudentSubmissionsDashboard } from '../TeacherDashboard/StudentSubmissionsDashboard';
 import ecoLogoImg from '../../assets/images/ecocritical_logo_1794300369798.jpg';
 import {
   Shield,
@@ -27,14 +28,16 @@ import {
   X,
   Plus,
   Trash2,
+  ClipboardList,
 } from 'lucide-react';
 
 export type AdminTab =
   | 'overview'
+  | 'submissions'
+  | 'users'
   | 'lessons'
   | 'knowledge'
   | 'ai_settings'
-  | 'users'
   | 'forum';
 
 export const AdminPortalLayout: React.FC = () => {
@@ -47,6 +50,8 @@ export const AdminPortalLayout: React.FC = () => {
     aiConfig,
     forumTopics,
     deleteTopic,
+    worksheetSubmissions,
+    journalSubmissions,
   } = usePortal();
 
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
@@ -57,6 +62,7 @@ export const AdminPortalLayout: React.FC = () => {
 
   const pendingStudentsCount = users.filter((u) => u.status === 'pending').length;
   const totalStudentsCount = users.filter((u) => u.role === 'student').length;
+  const totalSubmissionsCount = (worksheetSubmissions?.length || 0) + (journalSubmissions?.length || 0);
 
   const adminNavItems = [
     {
@@ -64,6 +70,19 @@ export const AdminPortalLayout: React.FC = () => {
       label: 'ภาพรวมระบบ (Overview)',
       icon: LayoutDashboard,
       badge: 'สรุปผล',
+    },
+    {
+      id: 'submissions',
+      label: 'แดชบอร์ดคำตอบนักเรียน (Submissions)',
+      icon: ClipboardList,
+      badge: `${totalSubmissionsCount} รายการ`,
+    },
+    {
+      id: 'users',
+      label: 'จัดการข้อมูลนักเรียน (User Credentials)',
+      icon: Users,
+      badge: pendingStudentsCount > 0 ? `รออนุมัติ ${pendingStudentsCount}` : `${users.length} คน`,
+      badgeAlert: pendingStudentsCount > 0,
     },
     {
       id: 'lessons',
@@ -82,13 +101,6 @@ export const AdminPortalLayout: React.FC = () => {
       label: 'ตั้งค่าระบบและโมเดล AI',
       icon: Cpu,
       badge: aiConfig.provider === 'gemini' ? 'Gemini' : 'OpenAI',
-    },
-    {
-      id: 'users',
-      label: 'จัดการผู้ใช้ & สิทธิ์',
-      icon: Users,
-      badge: pendingStudentsCount > 0 ? `รออนุมัติ ${pendingStudentsCount}` : `${users.length} คน`,
-      badgeAlert: pendingStudentsCount > 0,
     },
     {
       id: 'forum',
@@ -300,8 +312,23 @@ export const AdminPortalLayout: React.FC = () => {
                   </p>
                 </div>
 
-                {/* 4 Pastel Stat Cards */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6 pt-5 border-t border-emerald-200/70 text-xs">
+                {/* Pastel Stat Cards (5 Cards) */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-6 pt-5 border-t border-emerald-200/70 text-xs">
+                  <div
+                    onClick={() => setActiveTab('submissions')}
+                    className="p-4 rounded-2xl bg-white/95 backdrop-blur-xs border border-emerald-300 hover:bg-white transition-all cursor-pointer shadow-2xs group"
+                  >
+                    <span className="text-slate-500 block text-[11px] font-semibold">
+                      คำตอบใบงาน & สมุดอนุทิน
+                    </span>
+                    <div className="text-2xl font-black mt-1 text-slate-900 group-hover:text-emerald-700">
+                      {totalSubmissionsCount} รายการ
+                    </div>
+                    <span className="text-[10px] text-emerald-700 font-semibold">
+                      คลิกเพื่อตรวจและให้เกรด
+                    </span>
+                  </div>
+
                   <div
                     onClick={() => setActiveTab('users')}
                     className="p-4 rounded-2xl bg-white/95 backdrop-blur-xs border border-emerald-200/80 hover:bg-white transition-all cursor-pointer shadow-2xs group"
@@ -376,52 +403,55 @@ export const AdminPortalLayout: React.FC = () => {
               {/* Quick Actions Grid */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div
-                  onClick={() => setActiveTab('lessons')}
-                  className="p-5 rounded-3xl bg-white border border-emerald-100 hover:border-emerald-300 transition-all cursor-pointer shadow-xs hover:shadow-md space-y-2"
+                  onClick={() => setActiveTab('submissions')}
+                  className="p-5 rounded-3xl bg-white border border-emerald-100 hover:border-emerald-300 transition-all cursor-pointer shadow-xs hover:shadow-md space-y-2 group"
                 >
                   <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
-                    <BookOpen className="w-5 h-5" />
+                    <ClipboardList className="w-5 h-5" />
                   </div>
-                  <h3 className="font-extrabold text-sm text-slate-900">
-                    จัดการเนื้อหาบทเรียน (Lessons CRUD)
+                  <h3 className="font-extrabold text-sm text-slate-900 group-hover:text-emerald-700">
+                    แดชบอร์ดคำตอบนักเรียน (Submissions)
                   </h3>
                   <p className="text-xs text-slate-500 leading-relaxed">
-                    เพิ่มบทเรียนใหม่ แก้ไขคำถามกระตุ้นความคิด จัดการวิดีโอ YouTube และแบบทดสอบก่อน-หลังเรียน
+                    ตรวจคำตอบจากใบงานกิจกรรมและสมุดอนุทินสะท้อนคิดดิจิทัล ให้คะแนนและส่งข้อเสนอแนะกลับ
                   </p>
                 </div>
 
                 <div
                   onClick={() => setActiveTab('users')}
-                  className="p-5 rounded-3xl bg-white border border-sky-100 hover:border-sky-300 transition-all cursor-pointer shadow-xs hover:shadow-md space-y-2"
+                  className="p-5 rounded-3xl bg-white border border-sky-100 hover:border-sky-300 transition-all cursor-pointer shadow-xs hover:shadow-md space-y-2 group"
                 >
                   <div className="w-10 h-10 rounded-2xl bg-sky-100 text-sky-800 flex items-center justify-center font-bold">
                     <Users className="w-5 h-5" />
                   </div>
-                  <h3 className="font-extrabold text-sm text-slate-900">
-                    จัดการผู้ใช้งาน & สิทธิ์ (Users CRUD)
+                  <h3 className="font-extrabold text-sm text-slate-900 group-hover:text-sky-700">
+                    จัดการข้อมูลนักเรียน & รหัสผ่าน (Credentials)
                   </h3>
                   <p className="text-xs text-slate-500 leading-relaxed">
-                    เพิ่มบัญชีนักเรียน/ครู อนุมัติผู้สมัครใหม่ ปรับเปลี่ยนบทบาท หรือลบบัญชีผู้ใช้
+                    ตรวจสอบ Username/Password นักเรียน รีเซ็ตรหัสผ่าน อนุมัติผู้สมัครใหม่ หรือแก้ไขข้อมูล
                   </p>
                 </div>
 
                 <div
-                  onClick={() => setActiveTab('forum')}
-                  className="p-5 rounded-3xl bg-white border border-teal-100 hover:border-teal-300 transition-all cursor-pointer shadow-xs hover:shadow-md space-y-2"
+                  onClick={() => setActiveTab('lessons')}
+                  className="p-5 rounded-3xl bg-white border border-teal-100 hover:border-teal-300 transition-all cursor-pointer shadow-xs hover:shadow-md space-y-2 group"
                 >
                   <div className="w-10 h-10 rounded-2xl bg-teal-100 text-teal-800 flex items-center justify-center font-bold">
-                    <MessageSquare className="w-5 h-5" />
+                    <BookOpen className="w-5 h-5" />
                   </div>
-                  <h3 className="font-extrabold text-sm text-slate-900">
-                    ตรวจสอบกระทู้เว็บบอร์ด (Forum Moderation)
+                  <h3 className="font-extrabold text-sm text-slate-900 group-hover:text-teal-700">
+                    จัดการบทเรียน & ควิซ (Lessons CRUD)
                   </h3>
                   <p className="text-xs text-slate-500 leading-relaxed">
-                    ดูแลการอภิปราย ตรวจสอบเนื้อหาตามหลักคิดวิพากษ์ และลบกระทู้ที่ไม่เหมาะสมได้ทันที
+                    เพิ่มบทเรียนภูมิศาสตร์ จัดการวิดีโอ YouTube และแบบทดสอบเพื่อการคิดวิพากษ์
                   </p>
                 </div>
               </div>
             </div>
           )}
+
+          {/* TAB: STUDENT SUBMISSIONS DASHBOARD */}
+          {activeTab === 'submissions' && <StudentSubmissionsDashboard />}
 
           {/* TAB 2: LESSONS & QUIZZES CRUD */}
           {activeTab === 'lessons' && <LessonManager />}

@@ -45,7 +45,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [regUsername, setRegUsername] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regStudentId, setRegStudentId] = useState('');
-  const [regGradeClass, setRegGradeClass] = useState('มัธยมศึกษาปีที่ 5/1');
+  const [regGradeClass, setRegGradeClass] = useState('ม.4/1');
+  const [regSeatNumber, setRegSeatNumber] = useState('1');
   const [regSuccess, setRegSuccess] = useState<string | null>(null);
   const [regError, setRegError] = useState<string | null>(null);
 
@@ -79,6 +80,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       password: regPassword,
       studentId: regStudentId,
       gradeClass: regGradeClass,
+      seatNumber: regSeatNumber,
     });
 
     if (res.success) {
@@ -323,7 +325,49 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">รหัสนักเรียน</label>
+                <label className="block font-bold text-slate-700 mb-1">ระดับชั้น (39 ห้องเรียน) *</label>
+                  <select
+                    value={regGradeClass}
+                    onChange={(e) => setRegGradeClass(e.target.value)}
+                    className="w-full px-3.5 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 bg-white"
+                  >
+                    {[4, 5, 6].map((grade) => (
+                      <optgroup
+                        key={grade}
+                        label={`ม.${grade}/1 ถึง ม.${grade}/13`}
+                      >
+                        {Array.from({ length: 13 }, (_, i) => {
+                          const room = i + 1;
+                          const roomCode = `ม.${grade}/${room}`;
+                          return (
+                            <option key={`${grade}-${room}`} value={roomCode}>
+                              {roomCode}
+                            </option>
+                          );
+                        })}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">เลขที่ (1-50) *</label>
+                  <select
+                    value={regSeatNumber}
+                    onChange={(e) => setRegSeatNumber(e.target.value)}
+                    className="w-full px-3.5 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 bg-white"
+                  >
+                    {Array.from({ length: 50 }, (_, i) => i + 1).map((num) => (
+                      <option key={num} value={String(num)}>
+                        {num}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">รหัสนักเรียน (ถ้ามี)</label>
                 <input
                   type="text"
                   value={regStudentId}
@@ -332,18 +376,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   className="w-full px-3.5 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500 font-mono"
                 />
               </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">ระดับชั้น / ห้องเรียน</label>
-                <input
-                  type="text"
-                  value={regGradeClass}
-                  onChange={(e) => setRegGradeClass(e.target.value)}
-                  placeholder="ม.5/2"
-                  className="w-full px-3.5 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-            </div>
 
             <div>
               <label className="block font-bold text-slate-700 mb-1">กำหนดชื่อผู้ใช้ (Username) *</label>

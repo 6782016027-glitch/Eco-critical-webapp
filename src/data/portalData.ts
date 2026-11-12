@@ -3,7 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { User, Lesson, KnowledgeDoc, ForumTopic, AiConfig } from '../types/portal';
+import {
+  User,
+  Lesson,
+  KnowledgeDoc,
+  ForumTopic,
+  AiConfig,
+  StudentWorksheetSubmission,
+  StudentJournalSubmission,
+} from '../types/portal';
 import chiangmaiHazeImg from '../assets/images/chiangmai_smoke_haze_1793928769281.jpg';
 import bangkokSmogImg from '../assets/images/bangkok_smog_1793928804361.jpg';
 import maeMohImg from '../assets/images/mae_moh_smog_1793928786725.jpg';

@@ -16,6 +16,7 @@ export interface User {
   email?: string;
   studentId?: string;
   gradeClass?: string;
+  seatNumber?: string;
   registeredAt: string;
 }
 

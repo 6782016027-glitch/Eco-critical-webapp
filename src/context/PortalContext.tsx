@@ -32,7 +32,7 @@ interface PortalContextType {
   currentUser: User | null;
   login: (username: string, password: string) => { success: boolean; message: string; user?: User };
   logout: () => void;
-  register: (data: { username: string; password: string; name: string; studentId?: string; gradeClass?: string }) => { success: boolean; message: string };
+  register: (data: { username: string; password: string; name: string; studentId?: string; gradeClass?: string; seatNumber?: string }) => { success: boolean; message: string };
   quickSwitchUser: (userId: string) => void;
 
   // User Management
@@ -42,6 +42,9 @@ interface PortalContextType {
   updateUserRole: (userId: string, newRole: UserRole) => void;
   deleteUser: (userId: string) => void;
   addUser: (user: Omit<User, 'id' | 'registeredAt'>) => User;
+  resetStudentPassword: (userId: string, newPassword: string) => void;
+  updateStudentCredentials: (userId: string, data: Partial<User>) => void;
+  previewStudentLogin: () => void;
 
   // Lessons
   lessons: Lesson[];
@@ -315,6 +318,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     name: string;
     studentId?: string;
     gradeClass?: string;
+    seatNumber?: string;
   }) => {
     const exists = users.some(
       (u) => u.username.toLowerCase() === data.username.trim().toLowerCase()
@@ -332,7 +336,8 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       role: 'student',
       status: 'pending', // Pending approval by teacher/admin
       studentId: data.studentId?.trim() || `STD-${Math.floor(1000 + Math.random() * 9000)}`,
-      gradeClass: data.gradeClass || 'นักเรียนทั่วไป',
+      gradeClass: data.gradeClass || 'ม.4/1',
+      seatNumber: data.seatNumber || undefined,
       registeredAt: new Date().toISOString(),
     };
 
@@ -392,6 +397,46 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
     setUsers((prev) => [newUser, ...prev]);
     return newUser;
+  };
+
+  const resetStudentPassword = (userId: string, newPassword: string) => {
+    setUsers((prev) =>
+      prev.map((u) => (u.id === userId ? { ...u, password: newPassword } : u))
+    );
+    if (currentUser?.id === userId) {
+      setCurrentUser((prev) => (prev ? { ...prev, password: newPassword } : null));
+    }
+  };
+
+  const updateStudentCredentials = (userId: string, data: Partial<User>) => {
+    setUsers((prev) =>
+      prev.map((u) => (u.id === userId ? { ...u, ...data } : u))
+    );
+    if (currentUser?.id === userId) {
+      setCurrentUser((prev) => (prev ? { ...prev, ...data } : null));
+    }
+  };
+
+  const previewStudentLogin = () => {
+    // Pick existing approved student, or provide the default student
+    const existing = users.find((u) => u.role === 'student' && u.status === 'approved');
+    if (existing) {
+      setCurrentUser(existing);
+    } else {
+      const demoStudent: User = {
+        id: 'usr_std_naphat',
+        username: 'std_naphat',
+        password: 'Student1234',
+        name: 'นายนภัทร กานต์กมล (ตัวอย่างนักเรียน)',
+        role: 'student',
+        status: 'approved',
+        studentId: 'STD-6701',
+        gradeClass: 'มัธยมศึกษาปีที่ 4/1',
+        registeredAt: new Date().toISOString(),
+      };
+      setUsers((prev) => [demoStudent, ...prev]);
+      setCurrentUser(demoStudent);
+    }
   };
 
   // Lesson Management
@@ -803,6 +848,9 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         updateUserRole,
         deleteUser,
         addUser,
+        resetStudentPassword,
+        updateStudentCredentials,
+        previewStudentLogin,
         lessons,
         addLesson,
         updateLesson,
