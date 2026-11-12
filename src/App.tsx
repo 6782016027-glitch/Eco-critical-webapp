@@ -17,8 +17,8 @@ function AppContent() {
     return <LandingAuthPage />;
   }
 
-  // 2. Admin & Teacher View (Fully separated from Student View with interactive CRUD & pastel theme)
-  if (currentUser.role === 'admin' || currentUser.role === 'teacher') {
+  // 2. Admin View (Strictly restricted to users with role === 'admin' only)
+  if (currentUser.role === 'admin') {
     return <AdminPortalLayout />;
   }
 

@@ -24,7 +24,7 @@ interface QuizModalProps {
 }
 
 export const QuizModal: React.FC<QuizModalProps> = ({ lesson, onClose }) => {
-  const { recordQuizResult } = usePortal();
+  const { recordQuizResult, addQuizSubmission, currentUser } = usePortal();
 
   const questions = lesson.quizzes || [];
   const [currentIdx, setCurrentIdx] = useState<number>(0);
@@ -87,6 +87,30 @@ export const QuizModal: React.FC<QuizModalProps> = ({ lesson, onClose }) => {
       total: questions.length,
       completedAt: new Date().toISOString(),
       answers: selectedAnswers,
+    });
+
+    addQuizSubmission({
+      lessonId: lesson.id,
+      lessonTitle: lesson.title,
+      studentId: currentUser?.studentId || 'STD-001',
+      studentName: currentUser?.name || 'นักเรียน',
+      username: currentUser?.username || 'student',
+      gradeClass: currentUser?.gradeClass || 'ม.4/1',
+      score: calculatedScore,
+      total: questions.length,
+      status: 'graded',
+      teacherFeedback:
+        calculatedScore === questions.length
+          ? 'ยอดเยี่ยม ตอบถูกต้องทุกข้อ เข้าใจมโนทัศน์ภูมิศาสตร์ดีมาก'
+          : 'ดีมาก ทบทวนเนื้อหาบทเรียนเพิ่มเติมในข้อที่เลือกผิดเพื่อความแม่นยำ',
+      answers: questions.map((q, idx) => ({
+        questionId: q.id,
+        questionText: q.question,
+        selectedOption: selectedAnswers[idx] >= 0 ? q.options[selectedAnswers[idx]] : 'ไม่ได้ระบุคำตอบ',
+        correctOption: q.options[q.correctIndex],
+        isCorrect: selectedAnswers[idx] === q.correctIndex,
+        explanation: q.explanation,
+      })),
     });
 
     if (calculatedScore / questions.length >= 0.7) {

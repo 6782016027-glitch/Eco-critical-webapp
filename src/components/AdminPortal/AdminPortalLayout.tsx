@@ -13,6 +13,7 @@ import { StudentSubmissionsDashboard } from '../TeacherDashboard/StudentSubmissi
 import ecoLogoImg from '../../assets/images/ecocritical_logo_1794300369798.jpg';
 import {
   Shield,
+  ShieldAlert,
   LayoutDashboard,
   BookOpen,
   FileText,
@@ -50,6 +51,7 @@ export const AdminPortalLayout: React.FC = () => {
     aiConfig,
     forumTopics,
     deleteTopic,
+    quizSubmissions,
     worksheetSubmissions,
     journalSubmissions,
   } = usePortal();
@@ -62,7 +64,11 @@ export const AdminPortalLayout: React.FC = () => {
 
   const pendingStudentsCount = users.filter((u) => u.status === 'pending').length;
   const totalStudentsCount = users.filter((u) => u.role === 'student').length;
-  const totalSubmissionsCount = (worksheetSubmissions?.length || 0) + (journalSubmissions?.length || 0);
+  const totalSubmissionsCount =
+    (quizSubmissions?.length || 0) +
+    (worksheetSubmissions?.length || 0) +
+    (journalSubmissions?.length || 0) +
+    (forumTopics?.length || 0);
 
   const adminNavItems = [
     {
@@ -116,6 +122,32 @@ export const AdminPortalLayout: React.FC = () => {
       t.authorName.toLowerCase().includes(forumSearch.toLowerCase()) ||
       t.content.toLowerCase().includes(forumSearch.toLowerCase())
   );
+
+  // 1. Strict Security Guard: Admin Only Access Restriction
+  if (!currentUser || currentUser.role !== 'admin') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-white flex flex-col items-center justify-center p-6 text-center font-sans">
+        <div className="p-4 rounded-3xl bg-rose-500/10 border border-rose-500/30 text-rose-400 mb-5 shadow-lg shadow-rose-950/40">
+          <ShieldAlert className="w-12 h-12 text-rose-500" />
+        </div>
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-xs font-bold mb-3">
+          <span>สิทธิ์การเข้าถึงระดับผู้ดูแลระบบ (Admin Only)</span>
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-black text-white mb-2 tracking-tight">
+          ปฏิเสธการเข้าถึงแดชบอร์ด (Access Denied)
+        </h1>
+        <p className="text-slate-400 text-xs sm:text-sm max-w-md mb-6 leading-relaxed">
+          หน้านี้ถูกจำกัดสิทธิ์ให้เฉพาะบัญชีผู้ดูแลระบบ (Admin) เท่านั้นที่สามารถเข้าถึงและตรวจสอบข้อมูลผู้ใช้งาน รหัสผ่าน และคำตอบของนักเรียนได้ เพื่อความปลอดภัยและความเป็นส่วนตัว
+        </p>
+        <button
+          onClick={logout}
+          className="px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-sm shadow-md shadow-emerald-900/40 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+        >
+          กลับสู่หน้าลงชื่อเข้าใช้ (Login Page)
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50/60 via-teal-50/40 to-sky-50/60 text-slate-800 flex flex-col font-sans selection:bg-emerald-100 selection:text-emerald-900">

@@ -16,6 +16,7 @@ import {
   UserRole,
   StudentWorksheetSubmission,
   StudentJournalSubmission,
+  StudentQuizSubmission,
 } from '../types/portal';
 import {
   INITIAL_USERS,
@@ -25,6 +26,7 @@ import {
   INITIAL_AI_CONFIG,
   INITIAL_WORKSHEET_SUBMISSIONS,
   INITIAL_JOURNAL_SUBMISSIONS,
+  INITIAL_QUIZ_SUBMISSIONS,
 } from '../data/portalData';
 
 interface PortalContextType {
@@ -75,13 +77,17 @@ interface PortalContextType {
   addReply: (topicId: string, content: string) => void;
   toggleLikeTopic: (topicId: string) => void;
 
-  // Student Submissions (Worksheets & Journals)
+  // Student Submissions (Quiz, Worksheets & Journals)
+  quizSubmissions: StudentQuizSubmission[];
   worksheetSubmissions: StudentWorksheetSubmission[];
   journalSubmissions: StudentJournalSubmission[];
+  gradeQuiz: (submissionId: string, feedback: string) => void;
   gradeWorksheet: (submissionId: string, score: number, feedback: string) => void;
   gradeJournal: (journalId: string, score: number, feedback: string) => void;
+  deleteQuizSubmission: (submissionId: string) => void;
   deleteWorksheetSubmission: (submissionId: string) => void;
   deleteJournalSubmission: (journalId: string) => void;
+  addQuizSubmission: (sub: Omit<StudentQuizSubmission, 'id' | 'submittedAt'>) => void;
   addWorksheetSubmission: (sub: Omit<StudentWorksheetSubmission, 'id' | 'submittedAt' | 'status'>) => void;
   addJournalSubmission: (sub: Omit<StudentJournalSubmission, 'id' | 'entryDate' | 'status'>) => void;
 }
@@ -758,6 +764,14 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   // Student Submissions State
+  const [quizSubmissions, setQuizSubmissions] = useState<StudentQuizSubmission[]>(() => {
+    try {
+      const saved = localStorage.getItem('ECO_QUIZ_SUBMISSIONS');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_QUIZ_SUBMISSIONS;
+  });
+
   const [worksheetSubmissions, setWorksheetSubmissions] = useState<StudentWorksheetSubmission[]>(() => {
     try {
       const saved = localStorage.getItem('ECO_WORKSHEET_SUBMISSIONS');
@@ -775,12 +789,39 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   });
 
   useEffect(() => {
+    localStorage.setItem('ECO_QUIZ_SUBMISSIONS', JSON.stringify(quizSubmissions));
+  }, [quizSubmissions]);
+
+  useEffect(() => {
     localStorage.setItem('ECO_WORKSHEET_SUBMISSIONS', JSON.stringify(worksheetSubmissions));
   }, [worksheetSubmissions]);
 
   useEffect(() => {
     localStorage.setItem('ECO_JOURNAL_SUBMISSIONS', JSON.stringify(journalSubmissions));
   }, [journalSubmissions]);
+
+  const gradeQuiz = (submissionId: string, feedback: string) => {
+    setQuizSubmissions((prev) =>
+      prev.map((sub) =>
+        sub.id === submissionId
+          ? { ...sub, teacherFeedback: feedback, status: 'graded' }
+          : sub
+      )
+    );
+  };
+
+  const deleteQuizSubmission = (submissionId: string) => {
+    setQuizSubmissions((prev) => prev.filter((sub) => sub.id !== submissionId));
+  };
+
+  const addQuizSubmission = (sub: Omit<StudentQuizSubmission, 'id' | 'submittedAt'>) => {
+    const newSub: StudentQuizSubmission = {
+      ...sub,
+      id: `sub_quiz_${Date.now()}`,
+      submittedAt: new Date().toISOString(),
+    };
+    setQuizSubmissions((prev) => [newSub, ...prev]);
+  };
 
   const gradeWorksheet = (submissionId: string, score: number, feedback: string) => {
     setWorksheetSubmissions((prev) =>
@@ -872,12 +913,16 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         deleteTopic,
         addReply,
         toggleLikeTopic,
+        quizSubmissions,
         worksheetSubmissions,
         journalSubmissions,
+        gradeQuiz,
         gradeWorksheet,
         gradeJournal,
+        deleteQuizSubmission,
         deleteWorksheetSubmission,
         deleteJournalSubmission,
+        addQuizSubmission,
         addWorksheetSubmission,
         addJournalSubmission,
       }}

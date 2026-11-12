@@ -5,10 +5,17 @@
 
 import React, { useState } from 'react';
 import { usePortal } from '../../context/PortalContext';
-import { StudentWorksheetSubmission, StudentJournalSubmission } from '../../types/portal';
 import {
+  StudentWorksheetSubmission,
+  StudentJournalSubmission,
+  StudentQuizSubmission,
+  ForumTopic,
+} from '../../types/portal';
+import {
+  HelpCircle,
   FileText,
   BookOpen,
+  MessageSquare,
   CheckCircle2,
   Clock,
   Search,
@@ -17,35 +24,50 @@ import {
   Sparkles,
   User,
   GraduationCap,
-  ChevronRight,
   Save,
   Trash2,
   X,
-  MessageSquare,
-  HelpCircle,
   Eye,
-  Send,
   Calendar,
+  Send,
+  CornerDownRight,
+  Check,
+  AlertCircle,
+  ExternalLink,
 } from 'lucide-react';
 
 export const StudentSubmissionsDashboard: React.FC = () => {
   const {
+    quizSubmissions,
     worksheetSubmissions,
     journalSubmissions,
+    forumTopics,
+    gradeQuiz,
     gradeWorksheet,
     gradeJournal,
+    deleteQuizSubmission,
     deleteWorksheetSubmission,
     deleteJournalSubmission,
+    deleteTopic,
   } = usePortal();
 
-  // Filter and Search states
-  const [activeTab, setActiveTab] = useState<'all' | 'worksheets' | 'journals'>('all');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'graded'>('all');
-  const [searchTerm, setSearchTerm] = useState('');
+  // 4 Primary Category Tabs requested by user
+  type SubmissionCategory = 'quiz' | 'worksheets' | 'journals' | 'webboard';
+  const [activeTab, setActiveTab] = useState<SubmissionCategory>('quiz');
 
-  // Selected Submission for Detailed Inspection & Grading Modal
+  // Search and Filter states
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'graded'>('all');
+
+  // Modal inspection states
+  const [selectedQuiz, setSelectedQuiz] = useState<StudentQuizSubmission | null>(null);
   const [selectedWorksheet, setSelectedWorksheet] = useState<StudentWorksheetSubmission | null>(null);
   const [selectedJournal, setSelectedJournal] = useState<StudentJournalSubmission | null>(null);
+  const [selectedTopic, setSelectedTopic] = useState<ForumTopic | null>(null);
+
+  // Grading form state for Quiz
+  const [quizFeedbackInput, setQuizFeedbackInput] = useState<string>('');
+  const [quizSaveSuccess, setQuizSaveSuccess] = useState(false);
 
   // Grading form state for Worksheet
   const [wsScoreInput, setWsScoreInput] = useState<string>('');
@@ -57,7 +79,14 @@ export const StudentSubmissionsDashboard: React.FC = () => {
   const [jnFeedbackInput, setJnFeedbackInput] = useState<string>('');
   const [jnSaveSuccess, setJnSaveSuccess] = useState(false);
 
-  // Open Worksheet Grading Modal
+  // Open Quiz Modal
+  const openQuizModal = (quiz: StudentQuizSubmission) => {
+    setSelectedQuiz(quiz);
+    setQuizFeedbackInput(quiz.teacherFeedback || '');
+    setQuizSaveSuccess(false);
+  };
+
+  // Open Worksheet Modal
   const openWorksheetModal = (sub: StudentWorksheetSubmission) => {
     setSelectedWorksheet(sub);
     setWsScoreInput(sub.teacherScore !== undefined ? String(sub.teacherScore) : '');
@@ -65,7 +94,7 @@ export const StudentSubmissionsDashboard: React.FC = () => {
     setWsSaveSuccess(false);
   };
 
-  // Open Journal Grading Modal
+  // Open Journal Modal
   const openJournalModal = (jn: StudentJournalSubmission) => {
     setSelectedJournal(jn);
     setJnScoreInput(jn.teacherScore !== undefined ? String(jn.teacherScore) : '');
@@ -73,14 +102,26 @@ export const StudentSubmissionsDashboard: React.FC = () => {
     setJnSaveSuccess(false);
   };
 
-  // Handle Save Worksheet Grade
+  // Save Quiz Feedback
+  const handleSaveQuizFeedback = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedQuiz) return;
+    gradeQuiz(selectedQuiz.id, quizFeedbackInput.trim());
+    setSelectedQuiz({
+      ...selectedQuiz,
+      teacherFeedback: quizFeedbackInput.trim(),
+      status: 'graded',
+    });
+    setQuizSaveSuccess(true);
+    setTimeout(() => setQuizSaveSuccess(false), 2500);
+  };
+
+  // Save Worksheet Grade
   const handleSaveWorksheetGrade = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedWorksheet) return;
-
     const parsedScore = parseFloat(wsScoreInput);
     const validScore = isNaN(parsedScore) ? 0 : Math.min(selectedWorksheet.maxScore, Math.max(0, parsedScore));
-
     gradeWorksheet(selectedWorksheet.id, validScore, wsFeedbackInput.trim());
     setSelectedWorksheet({
       ...selectedWorksheet,
@@ -92,14 +133,12 @@ export const StudentSubmissionsDashboard: React.FC = () => {
     setTimeout(() => setWsSaveSuccess(false), 2500);
   };
 
-  // Handle Save Journal Grade
+  // Save Journal Grade
   const handleSaveJournalGrade = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedJournal) return;
-
     const parsedScore = parseFloat(jnScoreInput);
     const validScore = isNaN(parsedScore) ? 0 : Math.min(selectedJournal.maxScore, Math.max(0, parsedScore));
-
     gradeJournal(selectedJournal.id, validScore, jnFeedbackInput.trim());
     setSelectedJournal({
       ...selectedJournal,
@@ -111,428 +150,895 @@ export const StudentSubmissionsDashboard: React.FC = () => {
     setTimeout(() => setJnSaveSuccess(false), 2500);
   };
 
-  // Filtered lists
-  const filteredWorksheets = worksheetSubmissions.filter((sub) => {
+  // 1. Filtered Quiz Submissions
+  const filteredQuizzes = (quizSubmissions || []).filter((q) => {
     const matchSearch =
-      sub.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sub.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sub.worksheetTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sub.gradeClass.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchStatus = statusFilter === 'all' || sub.status === statusFilter;
+      q.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (q.username && q.username.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      q.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      q.lessonTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      q.answers.some((a) => a.questionText.toLowerCase().includes(searchTerm.toLowerCase()) || a.selectedOption.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchStatus = statusFilter === 'all' || q.status === statusFilter;
     return matchSearch && matchStatus;
   });
 
-  const filteredJournals = journalSubmissions.filter((jn) => {
+  // 2. Filtered Worksheet Submissions
+  const filteredWorksheets = (worksheetSubmissions || []).filter((w) => {
     const matchSearch =
-      jn.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      jn.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      jn.caseStudyTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      jn.gradeClass.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchStatus = statusFilter === 'all' || jn.status === statusFilter;
+      w.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (w.username && w.username.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      w.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      w.worksheetTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      w.answers.some((a) => a.prompt.toLowerCase().includes(searchTerm.toLowerCase()) || a.answer.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchStatus = statusFilter === 'all' || w.status === statusFilter;
     return matchSearch && matchStatus;
   });
 
-  // Calculate stats
-  const totalWsCount = worksheetSubmissions.length;
-  const totalJnCount = journalSubmissions.length;
-  const pendingWsCount = worksheetSubmissions.filter((s) => s.status === 'pending').length;
-  const pendingJnCount = journalSubmissions.filter((j) => j.status === 'pending').length;
-  const totalPending = pendingWsCount + pendingJnCount;
-  const totalGraded = totalWsCount + totalJnCount - totalPending;
+  // 3. Filtered Journal Submissions
+  const filteredJournals = (journalSubmissions || []).filter((j) => {
+    const matchSearch =
+      j.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (j.username && j.username.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      j.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      j.caseStudyTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      j.factsAndGeography.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      j.structuralCritique.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      j.policyAlternatives.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      j.personalReflection.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchStatus = statusFilter === 'all' || j.status === statusFilter;
+    return matchSearch && matchStatus;
+  });
+
+  // 4. Filtered Webboard Submissions (Topics & Replies by Students)
+  const filteredForumTopics = (forumTopics || []).filter((t) => {
+    const matchSearch =
+      t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.authorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.replies.some((r) => r.authorName.toLowerCase().includes(searchTerm.toLowerCase()) || r.content.toLowerCase().includes(searchTerm.toLowerCase()));
+    return matchSearch;
+  });
+
+  // Summary counts
+  const totalQuizzes = quizSubmissions?.length || 0;
+  const totalWorksheets = worksheetSubmissions?.length || 0;
+  const totalJournals = journalSubmissions?.length || 0;
+  const totalWebboard = forumTopics?.length || 0;
+  const grandTotal = totalQuizzes + totalWorksheets + totalJournals + totalWebboard;
+
+  const pendingCount =
+    (worksheetSubmissions?.filter((w) => w.status === 'pending').length || 0) +
+    (journalSubmissions?.filter((j) => j.status === 'pending').length || 0) +
+    (quizSubmissions?.filter((q) => q.status === 'pending').length || 0);
+
+  const gradedCount =
+    (worksheetSubmissions?.filter((w) => w.status === 'graded').length || 0) +
+    (journalSubmissions?.filter((j) => j.status === 'graded').length || 0) +
+    (quizSubmissions?.filter((q) => q.status === 'graded').length || 0);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
-      {/* Header Banner */}
-      <div className="p-6 bg-white rounded-3xl border border-emerald-200/80 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      {/* 1. Header Hero Card */}
+      <div className="p-6 sm:p-7 bg-white rounded-3xl border border-emerald-200/80 shadow-xs flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold mb-2">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-900 text-xs font-bold mb-2.5">
             <Sparkles className="w-3.5 h-3.5 text-emerald-700" />
-            <span>ศูนย์ตรวจประเมินผลการเรียนรู้ ม.ปลาย</span>
+            <span>ศูนย์ตรวจสอบและประเมินผลการเรียนรู้ของนักเรียน (Admin Submissions Inspection)</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2">
-            <FileText className="w-6 h-6 text-emerald-600" />
+            <Award className="w-6 h-6 text-emerald-600" />
             <span>แดชบอร์ดคำตอบนักเรียน (Student Submissions Dashboard)</span>
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            รวบรวมคำตอบจาก "ใบงาน" และ "สมุดอนุทินสะท้อนคิดดิจิทัล" พร้อมระบบตรวจให้คะแนนและส่งข้อเสนอแนะรายบุคคล
+          <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
+            รวบรวมคำตอบของนักเรียนครบทั้ง 4 ด้าน: <strong>1. ควิซ (Quiz)</strong>, <strong>2. ใบงาน (Worksheets)</strong>, <strong>3. สมุดอนุทิน (Journal/Diary)</strong>, และ <strong>4. เว็บบอร์ด (Webboard)</strong> พร้อมระบบบันทึกคะแนนและส่งข้อเสนอแนะรายบุคคล
           </p>
         </div>
 
-        {/* Total Summary Badge */}
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Global Stats Badges */}
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
           <div className="px-3.5 py-2 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold flex items-center gap-1.5 shadow-2xs">
             <Clock className="w-4 h-4 text-amber-600" />
-            <span>รอตรวจ {totalPending} รายการ</span>
+            <span>รอตรวจ {pendingCount} รายการ</span>
           </div>
           <div className="px-3.5 py-2 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold flex items-center gap-1.5 shadow-2xs">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <span>ตรวจแล้ว {totalGraded} รายการ</span>
+            <span>ตรวจแล้ว {gradedCount} รายการ</span>
+          </div>
+          <div className="px-3.5 py-2 rounded-2xl bg-slate-900 text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs">
+            <FileText className="w-4 h-4 text-emerald-400" />
+            <span>ทั้งหมด {grandTotal} รายการ</span>
           </div>
         </div>
       </div>
 
-      {/* 4 Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="p-4 sm:p-5 rounded-2xl bg-white border border-emerald-100 shadow-2xs">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-slate-500">ใบงานที่ส่งแล้ว</span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
-              <FileText className="w-4 h-4" />
+      {/* 2. Primary 4 Category Tabs (Tabs แยกตาม 4 หัวข้อหลักอย่างชัดเจน) */}
+      <div className="bg-white p-3 rounded-3xl border border-slate-200 shadow-2xs">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {/* Tab 1: Quiz */}
+          <button
+            onClick={() => setActiveTab('quiz')}
+            className={`p-3.5 sm:p-4 rounded-2xl text-left transition-all duration-200 flex flex-col justify-between cursor-pointer group ${
+              activeTab === 'quiz'
+                ? 'bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-md shadow-emerald-900/20 ring-2 ring-emerald-400/40'
+                : 'bg-slate-50/80 hover:bg-emerald-50/60 border border-slate-200/80 text-slate-700'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span
+                className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
+                  activeTab === 'quiz'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-emerald-100 text-emerald-800 group-hover:bg-emerald-200'
+                }`}
+              >
+                <HelpCircle className="w-4 h-4" />
+              </span>
+              <span
+                className={`text-[11px] font-black px-2 py-0.5 rounded-full ${
+                  activeTab === 'quiz'
+                    ? 'bg-white text-emerald-900'
+                    : 'bg-emerald-100 text-emerald-800'
+                }`}
+              >
+                {totalQuizzes} ชุด
+              </span>
             </div>
-          </div>
-          <div className="text-2xl font-black text-slate-900">{totalWsCount} ชุด</div>
-          <p className="text-[11px] text-emerald-700 mt-1 font-medium">รอตรวจ {pendingWsCount} ชุด</p>
-        </div>
+            <div>
+              <div className="font-extrabold text-sm sm:text-base leading-tight">1. ควิซ (Quiz)</div>
+              <p
+                className={`text-[11px] mt-0.5 ${
+                  activeTab === 'quiz' ? 'text-emerald-100' : 'text-slate-500'
+                }`}
+              >
+                คำตอบแบบทดสอบย่อยท้ายบท
+              </p>
+            </div>
+          </button>
 
-        <div className="p-4 sm:p-5 rounded-2xl bg-white border border-sky-100 shadow-2xs">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-slate-500">สมุดอนุทินดิจิทัล</span>
-            <div className="w-8 h-8 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center">
-              <BookOpen className="w-4 h-4" />
+          {/* Tab 2: Worksheets */}
+          <button
+            onClick={() => setActiveTab('worksheets')}
+            className={`p-3.5 sm:p-4 rounded-2xl text-left transition-all duration-200 flex flex-col justify-between cursor-pointer group ${
+              activeTab === 'worksheets'
+                ? 'bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-md shadow-emerald-900/20 ring-2 ring-emerald-400/40'
+                : 'bg-slate-50/80 hover:bg-emerald-50/60 border border-slate-200/80 text-slate-700'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span
+                className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
+                  activeTab === 'worksheets'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-teal-100 text-teal-800 group-hover:bg-teal-200'
+                }`}
+              >
+                <FileText className="w-4 h-4" />
+              </span>
+              <span
+                className={`text-[11px] font-black px-2 py-0.5 rounded-full ${
+                  activeTab === 'worksheets'
+                    ? 'bg-white text-teal-900'
+                    : 'bg-teal-100 text-teal-800'
+                }`}
+              >
+                {totalWorksheets} ชุด
+              </span>
             </div>
-          </div>
-          <div className="text-2xl font-black text-slate-900">{totalJnCount} บันทึก</div>
-          <p className="text-[11px] text-sky-700 mt-1 font-medium">รอตรวจ {pendingJnCount} บันทึก</p>
-        </div>
+            <div>
+              <div className="font-extrabold text-sm sm:text-base leading-tight">2. ใบงาน (Worksheets)</div>
+              <p
+                className={`text-[11px] mt-0.5 ${
+                  activeTab === 'worksheets' ? 'text-teal-100' : 'text-slate-500'
+                }`}
+              >
+                ใบงานวิเคราะห์ภูมิศาสตร์ & ข้อเสนอแนะ
+              </p>
+            </div>
+          </button>
 
-        <div className="p-4 sm:p-5 rounded-2xl bg-white border border-amber-100 shadow-2xs">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-slate-500">สถานะรอตรวจให้คะแนน</span>
-            <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center">
-              <Clock className="w-4 h-4" />
+          {/* Tab 3: Journal/Diary */}
+          <button
+            onClick={() => setActiveTab('journals')}
+            className={`p-3.5 sm:p-4 rounded-2xl text-left transition-all duration-200 flex flex-col justify-between cursor-pointer group ${
+              activeTab === 'journals'
+                ? 'bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-md shadow-emerald-900/20 ring-2 ring-emerald-400/40'
+                : 'bg-slate-50/80 hover:bg-emerald-50/60 border border-slate-200/80 text-slate-700'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span
+                className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
+                  activeTab === 'journals'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-sky-100 text-sky-800 group-hover:bg-sky-200'
+                }`}
+              >
+                <BookOpen className="w-4 h-4" />
+              </span>
+              <span
+                className={`text-[11px] font-black px-2 py-0.5 rounded-full ${
+                  activeTab === 'journals'
+                    ? 'bg-white text-sky-900'
+                    : 'bg-sky-100 text-sky-800'
+                }`}
+              >
+                {totalJournals} บันทึก
+              </span>
             </div>
-          </div>
-          <div className="text-2xl font-black text-amber-700">{totalPending} รายการ</div>
-          <p className="text-[11px] text-slate-500 mt-1 font-medium">ต้องการการประเมินจากครู</p>
-        </div>
+            <div>
+              <div className="font-extrabold text-sm sm:text-base leading-tight">3. สมุดอนุทิน (Journal/Diary)</div>
+              <p
+                className={`text-[11px] mt-0.5 ${
+                  activeTab === 'journals' ? 'text-sky-100' : 'text-slate-500'
+                }`}
+              >
+                การสะท้อนคิด 4 มิติทางสิ่งแวดล้อม
+              </p>
+            </div>
+          </button>
 
-        <div className="p-4 sm:p-5 rounded-2xl bg-white border border-teal-100 shadow-2xs">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-slate-500">ตรวจประเมินเสร็จสิ้น</span>
-            <div className="w-8 h-8 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center">
-              <Award className="w-4 h-4" />
+          {/* Tab 4: Webboard */}
+          <button
+            onClick={() => setActiveTab('webboard')}
+            className={`p-3.5 sm:p-4 rounded-2xl text-left transition-all duration-200 flex flex-col justify-between cursor-pointer group ${
+              activeTab === 'webboard'
+                ? 'bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-md shadow-emerald-900/20 ring-2 ring-emerald-400/40'
+                : 'bg-slate-50/80 hover:bg-emerald-50/60 border border-slate-200/80 text-slate-700'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span
+                className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
+                  activeTab === 'webboard'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-indigo-100 text-indigo-800 group-hover:bg-indigo-200'
+                }`}
+              >
+                <MessageSquare className="w-4 h-4" />
+              </span>
+              <span
+                className={`text-[11px] font-black px-2 py-0.5 rounded-full ${
+                  activeTab === 'webboard'
+                    ? 'bg-white text-indigo-900'
+                    : 'bg-indigo-100 text-indigo-800'
+                }`}
+              >
+                {totalWebboard} กระทู้
+              </span>
             </div>
-          </div>
-          <div className="text-2xl font-black text-teal-700">{totalGraded} รายการ</div>
-          <p className="text-[11px] text-slate-500 mt-1 font-medium">ให้คะแนน & ข้อเสนอแนะแล้ว</p>
+            <div>
+              <div className="font-extrabold text-sm sm:text-base leading-tight">4. เว็บบอร์ด (Webboard)</div>
+              <p
+                className={`text-[11px] mt-0.5 ${
+                  activeTab === 'webboard' ? 'text-indigo-100' : 'text-slate-500'
+                }`}
+              >
+                คำตอบและการอภิปรายในเว็บบอร์ด
+              </p>
+            </div>
+          </button>
         </div>
       </div>
 
-      {/* Filter and Search Controls */}
-      <div className="p-4 sm:p-5 bg-white rounded-3xl border border-slate-200 shadow-2xs space-y-4">
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-          {/* Main Category Tabs */}
-          <div className="flex p-1 bg-slate-100 rounded-2xl text-xs font-bold gap-1 overflow-x-auto">
-            <button
-              onClick={() => setActiveTab('all')}
-              className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
-                activeTab === 'all'
-                  ? 'bg-white text-emerald-800 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              ทั้งหมด ({totalWsCount + totalJnCount})
-            </button>
-            <button
-              onClick={() => setActiveTab('worksheets')}
-              className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
-                activeTab === 'worksheets'
-                  ? 'bg-white text-emerald-800 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <FileText className="w-3.5 h-3.5" />
-              <span>คำตอบใบงาน ({totalWsCount})</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('journals')}
-              className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
-                activeTab === 'journals'
-                  ? 'bg-white text-emerald-800 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <BookOpen className="w-3.5 h-3.5" />
-              <span>สมุดอนุทินสะท้อนคิด ({totalJnCount})</span>
-            </button>
-          </div>
-
+      {/* 3. Search and Status Filter Controls */}
+      <div className="p-4 sm:p-5 bg-white rounded-3xl border border-slate-200 shadow-2xs space-y-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
           {/* Search Box */}
-          <div className="relative w-full md:w-80">
+          <div className="relative flex-1">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="ค้นหาชื่อนักเรียน, รหัส, ระดับชั้น..."
-              className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-emerald-500 transition-colors"
+              placeholder="ค้นหาชื่อนักเรียน, username, หัวข้อคำถาม หรือเนื้อหาคำตอบ..."
+              className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:bg-white focus:border-emerald-500 transition-colors"
             />
           </div>
-        </div>
 
-        {/* Status Filter Badges */}
-        <div className="flex items-center gap-2 text-xs pt-1">
-          <span className="text-slate-400 font-bold flex items-center gap-1">
-            <Filter className="w-3.5 h-3.5" />
-            สถานะการตรวจ:
-          </span>
-          <button
-            onClick={() => setStatusFilter('all')}
-            className={`px-3 py-1 rounded-lg font-semibold transition-colors cursor-pointer ${
-              statusFilter === 'all'
-                ? 'bg-emerald-600 text-white font-bold'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            ทั้งหมด
-          </button>
-          <button
-            onClick={() => setStatusFilter('pending')}
-            className={`px-3 py-1 rounded-lg font-semibold transition-colors cursor-pointer ${
-              statusFilter === 'pending'
-                ? 'bg-amber-600 text-white font-bold'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            รอการตรวจให้คะแนน ({totalPending})
-          </button>
-          <button
-            onClick={() => setStatusFilter('graded')}
-            className={`px-3 py-1 rounded-lg font-semibold transition-colors cursor-pointer ${
-              statusFilter === 'graded'
-                ? 'bg-teal-600 text-white font-bold'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            ตรวจแล้ว ({totalGraded})
-          </button>
+          {/* Status Filter buttons (for Quiz, Worksheets, Journal) */}
+          {activeTab !== 'webboard' && (
+            <div className="flex items-center gap-1.5 shrink-0 bg-slate-100 p-1 rounded-xl text-xs">
+              <span className="text-slate-500 font-bold px-2 hidden sm:inline flex items-center gap-1">
+                <Filter className="w-3 h-3" />
+                สถานะ:
+              </span>
+              <button
+                onClick={() => setStatusFilter('all')}
+                className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                  statusFilter === 'all'
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                ทั้งหมด
+              </button>
+              <button
+                onClick={() => setStatusFilter('pending')}
+                className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                  statusFilter === 'pending'
+                    ? 'bg-amber-600 text-white shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                รอตรวจ
+              </button>
+              <button
+                onClick={() => setStatusFilter('graded')}
+                className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                  statusFilter === 'graded'
+                    ? 'bg-emerald-600 text-white shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                ตรวจแล้ว
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ======================================================== */}
-      {/* SECTION 1: WORKSHEET SUBMISSIONS TABLE                   */}
-      {/* ======================================================== */}
-      {(activeTab === 'all' || activeTab === 'worksheets') && (
-        <section className="bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-6 shadow-xs space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-            <div className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-emerald-600" />
-              <h3 className="font-extrabold text-base text-slate-900">
-                รายการส่งคำตอบ "ใบงาน" (Worksheet Submissions)
-              </h3>
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+      {/* ========================================================================= */}
+      {/* TAB 1: ควิซ (QUIZ SUBMISSIONS)                                            */}
+      {/* Shows: Student Name/Username, Timestamp, Question Topic, Submitted Answer */}
+      {/* ========================================================================= */}
+      {activeTab === 'quiz' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between pb-1">
+            <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-emerald-600" />
+              <span>รายการส่งผลการทำ "ควิซ (Quiz)"</span>
+              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                {filteredQuizzes.length} รายการ
+              </span>
+            </h3>
+          </div>
+
+          {filteredQuizzes.length === 0 ? (
+            <div className="p-8 text-center bg-white rounded-3xl border border-slate-200 text-slate-400 text-sm">
+              ไม่พบรายการส่งควิซที่ตรงกับการค้นหา
+            </div>
+          ) : (
+            <div className="space-y-3.5">
+              {filteredQuizzes.map((quiz) => (
+                <div
+                  key={quiz.id}
+                  className="p-5 bg-white border border-slate-200 hover:border-emerald-300 rounded-3xl shadow-xs transition-all space-y-4"
+                >
+                  {/* Item Header: Student Info, Username, Timestamp, Score */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-900 flex items-center justify-center font-black text-sm shrink-0">
+                        {quiz.studentName.charAt(0)}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-extrabold text-sm sm:text-base text-slate-900">
+                            {quiz.studentName}
+                          </span>
+                          <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
+                            @{quiz.username || 'student'}
+                          </span>
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            {quiz.gradeClass}
+                          </span>
+                          <span className="text-[11px] text-slate-400 font-mono">
+                            {quiz.studentId}
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-500 flex items-center gap-1.5 mt-1">
+                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                          <span>วันเวลาที่ส่ง:</span>
+                          <strong className="text-slate-700">
+                            {new Date(quiz.submittedAt).toLocaleString('th-TH')}
+                          </strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Score Badge and Actions */}
+                    <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                      <div className="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 font-mono font-black text-xs sm:text-sm">
+                        คะแนน: {quiz.score} / {quiz.total}
+                      </div>
+                      <button
+                        onClick={() => openQuizModal(quiz)}
+                        className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>ดูรายละเอียด & ให้คำแนะนำ</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm(`คุณต้องการลบผลควิซของ ${quiz.studentName} ใช่หรือไม่?`)) {
+                            deleteQuizSubmission(quiz.id);
+                          }
+                        }}
+                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+                        title="ลบรายการนี้"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Question Topic & Submitted Answers Display */}
+                  <div className="space-y-2.5">
+                    <div className="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
+                      <HelpCircle className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>หัวข้อบทเรียน: {quiz.lessonTitle}</span>
+                    </div>
+
+                    {/* Answers list cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                      {quiz.answers.map((ans, idx) => (
+                        <div
+                          key={ans.questionId || idx}
+                          className="p-3.5 rounded-2xl bg-slate-50/90 border border-slate-200 text-xs space-y-1.5"
+                        >
+                          <div className="font-bold text-slate-800 flex items-start gap-1.5">
+                            <span className="w-5 h-5 rounded-full bg-slate-200 text-slate-700 text-[10px] font-black flex items-center justify-center shrink-0 mt-0.5">
+                              {idx + 1}
+                            </span>
+                            <span className="line-clamp-2">{ans.questionText}</span>
+                          </div>
+
+                          {/* Student Submitted Answer Callout */}
+                          <div className="p-2.5 rounded-xl bg-white border border-emerald-200/80 text-slate-800 text-[11px] leading-relaxed">
+                            <span className="text-slate-400 font-bold block mb-0.5">คำตอบที่นักเรียนเลือก:</span>
+                            <div className="flex items-start gap-1.5 font-semibold text-slate-900">
+                              {ans.isCorrect ? (
+                                <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                              ) : (
+                                <X className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                              )}
+                              <span>{ans.selectedOption}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Teacher feedback if present */}
+                    {quiz.teacherFeedback && (
+                      <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-start gap-2">
+                        <Sparkles className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <div>
+                          <strong>ข้อเสนอแนะจากครู:</strong> {quiz.teacherFeedback}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 2: ใบงาน (WORKSHEET SUBMISSIONS)                                       */}
+      {/* Shows: Student Name/Username, Timestamp, Question Topic, Submitted Answer */}
+      {/* ========================================================================= */}
+      {activeTab === 'worksheets' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between pb-1">
+            <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
+              <FileText className="w-5 h-5 text-teal-600" />
+              <span>รายการส่ง "ใบงาน (Worksheets)"</span>
+              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-teal-100 text-teal-800">
                 {filteredWorksheets.length} รายการ
               </span>
-            </div>
+            </h3>
           </div>
 
           {filteredWorksheets.length === 0 ? (
-            <div className="py-8 text-center text-xs text-slate-400">
-              ไม่พบรายการส่งใบงานที่ตรงกับเงื่อนไขการค้นหา
+            <div className="p-8 text-center bg-white rounded-3xl border border-slate-200 text-slate-400 text-sm">
+              ไม่พบรายการส่งใบงานที่ตรงกับการค้นหา
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-2xl border border-slate-200">
-              <table className="w-full text-left text-xs sm:text-sm">
-                <thead className="bg-slate-100/80 text-slate-700 font-bold border-b border-slate-200">
-                  <tr>
-                    <th className="py-3 px-4">ชื่อนักเรียน / รหัส</th>
-                    <th className="py-3 px-4">ระดับชั้น</th>
-                    <th className="py-3 px-4">ชื่อใบงาน</th>
-                    <th className="py-3 px-4">วันที่ส่ง</th>
-                    <th className="py-3 px-4 text-center">สถานะ</th>
-                    <th className="py-3 px-4 text-center">คะแนน</th>
-                    <th className="py-3 px-4 text-center">จัดการ</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredWorksheets.map((sub) => (
-                    <tr key={sub.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3.5 px-4 font-bold text-slate-900">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs shrink-0">
-                            {sub.studentName.charAt(0)}
-                          </div>
-                          <div>
-                            <div>{sub.studentName}</div>
-                            <div className="text-[11px] text-slate-400 font-mono">{sub.studentId}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-4 text-slate-600 whitespace-nowrap">
-                        {sub.gradeClass}
-                      </td>
-                      <td className="py-3.5 px-4 font-semibold text-slate-800 max-w-xs truncate">
-                        {sub.worksheetTitle}
-                      </td>
-                      <td className="py-3.5 px-4 text-slate-500 whitespace-nowrap text-xs">
-                        {sub.submittedAt}
-                      </td>
-                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                        <span
-                          className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                            sub.status === 'graded'
-                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                              : 'bg-amber-100 text-amber-800 border border-amber-200'
-                          }`}
-                        >
-                          {sub.status === 'graded' ? 'ตรวจแล้ว' : 'รอตรวจ'}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 text-center whitespace-nowrap font-bold">
-                        {sub.teacherScore !== undefined ? (
-                          <span className="text-emerald-700 font-mono text-sm">
-                            {sub.teacherScore} / {sub.maxScore}
+            <div className="space-y-3.5">
+              {filteredWorksheets.map((sub) => (
+                <div
+                  key={sub.id}
+                  className="p-5 bg-white border border-slate-200 hover:border-teal-300 rounded-3xl shadow-xs transition-all space-y-4"
+                >
+                  {/* Item Header */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-teal-100 text-teal-900 flex items-center justify-center font-black text-sm shrink-0">
+                        {sub.studentName.charAt(0)}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-extrabold text-sm sm:text-base text-slate-900">
+                            {sub.studentName}
                           </span>
-                        ) : (
-                          <span className="text-slate-300">-</span>
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <button
-                            onClick={() => openWorksheetModal(sub)}
-                            className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs border border-emerald-200 transition-colors flex items-center gap-1 cursor-pointer"
-                          >
-                            <Eye className="w-3.5 h-3.5 text-emerald-600" />
-                            <span>ตรวจคำตอบ</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (confirm(`คุณต้องการลบรายการส่งใบงานของ ${sub.studentName} ใช่หรือไม่?`)) {
-                                deleteWorksheetSubmission(sub.id);
-                              }
-                            }}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                            title="ลบรายการนี้"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
+                            @{sub.username || sub.studentId.toLowerCase().replace(/[^a-z0-9]/g, '')}
+                          </span>
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200">
+                            {sub.gradeClass}
+                          </span>
+                          <span className="text-[11px] text-slate-400 font-mono">{sub.studentId}</span>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        <div className="text-xs text-slate-500 flex items-center gap-1.5 mt-1">
+                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                          <span>วันเวลาที่ส่ง:</span>
+                          <strong className="text-slate-700">{sub.submittedAt}</strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Grading Status & Actions */}
+                    <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                      <span
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold ${
+                          sub.status === 'graded'
+                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                            : 'bg-amber-100 text-amber-900 border border-amber-200'
+                        }`}
+                      >
+                        {sub.status === 'graded'
+                          ? `คะแนน ${sub.teacherScore} / ${sub.maxScore}`
+                          : 'รอตรวจให้คะแนน'}
+                      </span>
+                      <button
+                        onClick={() => openWorksheetModal(sub)}
+                        className="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>ตรวจคำตอบ & ให้คะแนน</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm(`คุณต้องการลบรายการส่งใบงานของ ${sub.studentName} หรือไม่?`)) {
+                            deleteWorksheetSubmission(sub.id);
+                          }
+                        }}
+                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+                        title="ลบรายการนี้"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Question Topic Heading */}
+                  <div>
+                    <div className="text-xs font-extrabold text-teal-900 flex items-center gap-1.5 mb-2">
+                      <FileText className="w-4 h-4 text-teal-600" />
+                      <span>{sub.worksheetTitle}</span>
+                    </div>
+
+                    {/* Submitted Answers List */}
+                    <div className="space-y-2.5">
+                      {sub.answers.map((ans, idx) => (
+                        <div
+                          key={ans.questionId || idx}
+                          className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-1.5"
+                        >
+                          <div className="font-bold text-slate-900 flex items-start gap-1.5">
+                            <span className="text-teal-700 font-mono font-bold">ข้อที่ {idx + 1}:</span>
+                            <span>{ans.prompt}</span>
+                          </div>
+
+                          {/* Student's submitted text */}
+                          <div className="p-3 bg-white rounded-xl border border-teal-100 text-slate-800 text-xs leading-relaxed font-medium">
+                            <span className="text-slate-400 font-bold block text-[10px] mb-1">
+                              คำตอบที่นักเรียนส่ง (Submitted Answer):
+                            </span>
+                            {ans.answer || <span className="text-slate-400 italic">ไม่ได้ระบุคำตอบ</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Feedback if graded */}
+                    {sub.teacherFeedback && (
+                      <div className="mt-3 p-3 rounded-2xl bg-teal-50 border border-teal-200 text-xs text-teal-900 flex items-start gap-2">
+                        <Sparkles className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
+                        <div>
+                          <strong>ข้อเสนอแนะจากครู:</strong> {sub.teacherFeedback}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
-        </section>
+        </div>
       )}
 
-      {/* ======================================================== */}
-      {/* SECTION 2: DIGITAL JOURNAL SUBMISSIONS TABLE             */}
-      {/* ======================================================== */}
-      {(activeTab === 'all' || activeTab === 'journals') && (
-        <section className="bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-6 shadow-xs space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-            <div className="flex items-center gap-2">
+      {/* ========================================================================= */}
+      {/* TAB 3: สมุดอนุทิน (JOURNAL/DIARY SUBMISSIONS)                               */}
+      {/* Shows: Student Name/Username, Timestamp, Question Topic, Submitted Answer */}
+      {/* ========================================================================= */}
+      {activeTab === 'journals' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between pb-1">
+            <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-sky-600" />
-              <h3 className="font-extrabold text-base text-slate-900">
-                รายการส่ง "สมุดอนุทินสะท้อนคิดดิจิทัล" (Digital Reflective Journals)
-              </h3>
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-sky-100 text-sky-800">
+              <span>รายการส่ง "สมุดอนุทินสะท้อนคิดดิจิทัล (Journal/Diary)"</span>
+              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800">
                 {filteredJournals.length} รายการ
               </span>
-            </div>
+            </h3>
           </div>
 
           {filteredJournals.length === 0 ? (
-            <div className="py-8 text-center text-xs text-slate-400">
-              ไม่พบรายการส่งสมุดอนุทินที่ตรงกับเงื่อนไขการค้นหา
+            <div className="p-8 text-center bg-white rounded-3xl border border-slate-200 text-slate-400 text-sm">
+              ไม่พบรายการส่งสมุดอนุทินที่ตรงกับการค้นหา
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-2xl border border-slate-200">
-              <table className="w-full text-left text-xs sm:text-sm">
-                <thead className="bg-slate-100/80 text-slate-700 font-bold border-b border-slate-200">
-                  <tr>
-                    <th className="py-3 px-4">ชื่อนักเรียน / รหัส</th>
-                    <th className="py-3 px-4">ระดับชั้น</th>
-                    <th className="py-3 px-4">กรณีศึกษาที่สะท้อนคิด</th>
-                    <th className="py-3 px-4">วันที่บันทึก</th>
-                    <th className="py-3 px-4 text-center">สถานะ</th>
-                    <th className="py-3 px-4 text-center">คะแนน</th>
-                    <th className="py-3 px-4 text-center">จัดการ</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredJournals.map((jn) => (
-                    <tr key={jn.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3.5 px-4 font-bold text-slate-900">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-sky-100 text-sky-800 flex items-center justify-center font-bold text-xs shrink-0">
-                            {jn.studentName.charAt(0)}
-                          </div>
-                          <div>
-                            <div>{jn.studentName}</div>
-                            <div className="text-[11px] text-slate-400 font-mono">{jn.studentId}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-4 text-slate-600 whitespace-nowrap">
-                        {jn.gradeClass}
-                      </td>
-                      <td className="py-3.5 px-4 font-semibold text-slate-800 max-w-xs truncate">
-                        {jn.caseStudyTitle}
-                      </td>
-                      <td className="py-3.5 px-4 text-slate-500 whitespace-nowrap text-xs font-mono">
-                        {jn.entryDate}
-                      </td>
-                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                        <span
-                          className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                            jn.status === 'graded'
-                              ? 'bg-teal-100 text-teal-800 border border-teal-200'
-                              : 'bg-amber-100 text-amber-800 border border-amber-200'
-                          }`}
-                        >
-                          {jn.status === 'graded' ? 'ตรวจแล้ว' : 'รอตรวจ'}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 text-center whitespace-nowrap font-bold">
-                        {jn.teacherScore !== undefined ? (
-                          <span className="text-teal-700 font-mono text-sm">
-                            {jn.teacherScore} / {jn.maxScore}
+            <div className="space-y-3.5">
+              {filteredJournals.map((jn) => (
+                <div
+                  key={jn.id}
+                  className="p-5 bg-white border border-slate-200 hover:border-sky-300 rounded-3xl shadow-xs transition-all space-y-4"
+                >
+                  {/* Item Header */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-sky-100 text-sky-900 flex items-center justify-center font-black text-sm shrink-0">
+                        {jn.studentName.charAt(0)}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-extrabold text-sm sm:text-base text-slate-900">
+                            {jn.studentName}
                           </span>
-                        ) : (
-                          <span className="text-slate-300">-</span>
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <button
-                            onClick={() => openJournalModal(jn)}
-                            className="px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 font-bold text-xs border border-sky-200 transition-colors flex items-center gap-1 cursor-pointer"
-                          >
-                            <Eye className="w-3.5 h-3.5 text-sky-600" />
-                            <span>ตรวจอนุทิน</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (confirm(`คุณต้องการลบสมุดอนุทินของ ${jn.studentName} ใช่หรือไม่?`)) {
-                                deleteJournalSubmission(jn.id);
-                              }
-                            }}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                            title="ลบรายการนี้"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
+                            @{jn.username || jn.studentId.toLowerCase().replace(/[^a-z0-9]/g, '')}
+                          </span>
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-sky-50 text-sky-800 border border-sky-200">
+                            {jn.gradeClass}
+                          </span>
+                          <span className="text-[11px] text-slate-400 font-mono">{jn.studentId}</span>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        <div className="text-xs text-slate-500 flex items-center gap-1.5 mt-1">
+                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                          <span>วันเวลาที่ส่ง:</span>
+                          <strong className="text-slate-700">{jn.entryDate}</strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Grading Status & Actions */}
+                    <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                      <span
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold ${
+                          jn.status === 'graded'
+                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                            : 'bg-amber-100 text-amber-900 border border-amber-200'
+                        }`}
+                      >
+                        {jn.status === 'graded'
+                          ? `คะแนน ${jn.teacherScore} / ${jn.maxScore}`
+                          : 'รอตรวจให้คะแนน'}
+                      </span>
+                      <button
+                        onClick={() => openJournalModal(jn)}
+                        className="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>ตรวจอนุทิน & ให้คะแนน</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm(`คุณต้องการลบสมุดอนุทินของ ${jn.studentName} หรือไม่?`)) {
+                            deleteJournalSubmission(jn.id);
+                          }
+                        }}
+                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+                        title="ลบรายการนี้"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Question Topic Heading */}
+                  <div>
+                    <div className="text-xs font-extrabold text-sky-900 flex items-center gap-1.5 mb-2">
+                      <BookOpen className="w-4 h-4 text-sky-600" />
+                      <span>กรณีศึกษา: {jn.caseStudyTitle}</span>
+                    </div>
+
+                    {/* 4-Dimensional Submitted Answers */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {/* Dim 1 */}
+                      <div className="p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-100 space-y-1">
+                        <span className="text-[11px] font-bold text-emerald-900 block">
+                          1. มิติภูมิศาสตร์กายภาพ (Facts & Geography)
+                        </span>
+                        <p className="text-xs text-slate-700 leading-relaxed bg-white p-2.5 rounded-xl border border-emerald-100/80">
+                          {jn.factsAndGeography}
+                        </p>
+                      </div>
+
+                      {/* Dim 2 */}
+                      <div className="p-3.5 rounded-2xl bg-amber-50/60 border border-amber-100 space-y-1">
+                        <span className="text-[11px] font-bold text-amber-900 block">
+                          2. การวิพากษ์เชิงโครงสร้าง (Structural Critique)
+                        </span>
+                        <p className="text-xs text-slate-700 leading-relaxed bg-white p-2.5 rounded-xl border border-amber-100/80">
+                          {jn.structuralCritique}
+                        </p>
+                      </div>
+
+                      {/* Dim 3 */}
+                      <div className="p-3.5 rounded-2xl bg-sky-50/60 border border-sky-100 space-y-1">
+                        <span className="text-[11px] font-bold text-sky-900 block">
+                          3. ทางเลือกเชิงนโยบาย (Policy Alternatives)
+                        </span>
+                        <p className="text-xs text-slate-700 leading-relaxed bg-white p-2.5 rounded-xl border border-sky-100/80">
+                          {jn.policyAlternatives}
+                        </p>
+                      </div>
+
+                      {/* Dim 4 */}
+                      <div className="p-3.5 rounded-2xl bg-purple-50/60 border border-purple-100 space-y-1">
+                        <span className="text-[11px] font-bold text-purple-900 block">
+                          4. การสะท้อนคิดของตนเอง (Personal Reflection)
+                        </span>
+                        <p className="text-xs text-slate-700 leading-relaxed bg-white p-2.5 rounded-xl border border-purple-100/80">
+                          {jn.personalReflection}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Feedback if graded */}
+                    {jn.teacherFeedback && (
+                      <div className="mt-3 p-3 rounded-2xl bg-sky-50 border border-sky-200 text-xs text-sky-900 flex items-start gap-2">
+                        <Sparkles className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
+                        <div>
+                          <strong>ข้อเสนอแนะจากครู:</strong> {jn.teacherFeedback}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
-        </section>
+        </div>
       )}
 
-      {/* ======================================================== */}
-      {/* MODAL 1: DETAILED WORKSHEET INSPECTION & GRADING         */}
-      {/* ======================================================== */}
-      {selectedWorksheet && (
+      {/* ========================================================================= */}
+      {/* TAB 4: เว็บบอร์ด (WEBBOARD SUBMISSIONS)                                     */}
+      {/* Shows: Student Name/Username, Timestamp, Question Topic, Submitted Answer */}
+      {/* ========================================================================= */}
+      {activeTab === 'webboard' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between pb-1">
+            <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-indigo-600" />
+              <span>รายการกระทู้และคำตอบใน "เว็บบอร์ด (Webboard Discussions)"</span>
+              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
+                {filteredForumTopics.length} กระทู้
+              </span>
+            </h3>
+          </div>
+
+          {filteredForumTopics.length === 0 ? (
+            <div className="p-8 text-center bg-white rounded-3xl border border-slate-200 text-slate-400 text-sm">
+              ไม่พบกระทู้หรือความคิดเห็นที่ตรงกับการค้นหา
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredForumTopics.map((topic) => (
+                <div
+                  key={topic.id}
+                  className="p-5 bg-white border border-slate-200 hover:border-indigo-300 rounded-3xl shadow-xs transition-all space-y-4"
+                >
+                  {/* Topic Header: Student Author Info & Timestamp */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-indigo-100 text-indigo-900 flex items-center justify-center font-black text-sm shrink-0">
+                        {topic.authorName.charAt(0)}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-extrabold text-sm sm:text-base text-slate-900">
+                            {topic.authorName}
+                          </span>
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-800 border border-indigo-200">
+                            บทบาท: {topic.authorRole === 'student' ? 'นักเรียน' : topic.authorRole}
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-500 flex items-center gap-1.5 mt-1">
+                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                          <span>วันเวลาที่ส่ง/ตั้งกระทู้:</span>
+                          <strong className="text-slate-700">
+                            {new Date(topic.createdAt).toLocaleString('th-TH')}
+                          </strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                      <span className="px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs flex items-center gap-1">
+                        💬 {topic.replies.length} คำตอบในกระทู้
+                      </span>
+                      <button
+                        onClick={() => setSelectedTopic(topic)}
+                        className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>เปิดดูกระทู้ฉบับเต็ม</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm(`คุณต้องการลบกระทู้ "${topic.title}" ใช่หรือไม่?`)) {
+                            deleteTopic(topic.id);
+                          }
+                        }}
+                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+                        title="ลบกระทู้นี้"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Question Topic / Prompt */}
+                  <div className="space-y-2">
+                    <div className="text-xs font-bold text-indigo-800 flex items-center gap-1.5">
+                      <MessageSquare className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>หัวข้อคำถาม/ประเด็นการอภิปราย (Topic Prompt):</span>
+                    </div>
+                    <h4 className="font-extrabold text-sm sm:text-base text-slate-900">
+                      {topic.title}
+                    </h4>
+
+                    {/* Submitted discussion content by student */}
+                    <div className="p-3.5 rounded-2xl bg-indigo-50/40 border border-indigo-100 text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
+                      <span className="text-indigo-900/60 font-bold block text-[10px] mb-1">
+                        คำตอบ/ข้อคิดเห็นที่ส่ง (Student's Submission):
+                      </span>
+                      {topic.content}
+                    </div>
+
+                    {/* Student Replies Preview if any */}
+                    {topic.replies.length > 0 && (
+                      <div className="pt-2 border-t border-slate-100 space-y-2">
+                        <span className="text-[11px] font-bold text-slate-500 block">
+                          คำตอบและความคิดเห็นของผู้เรียนในกระทู้นี้ ({topic.replies.length} รายการ):
+                        </span>
+                        <div className="space-y-2">
+                          {topic.replies.map((reply) => (
+                            <div
+                              key={reply.id}
+                              className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-start gap-2.5"
+                            >
+                              <CornerDownRight className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap mb-1">
+                                  <strong className="text-slate-900">{reply.authorName}</strong>
+                                  <span className="text-[10px] font-mono text-slate-400">
+                                    {new Date(reply.createdAt).toLocaleDateString('th-TH')}
+                                  </span>
+                                </div>
+                                <p className="text-slate-700 leading-relaxed">{reply.content}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 1: DETAILED QUIZ INSPECTION & TEACHER FEEDBACK                      */}
+      {/* ========================================================================= */}
+      {selectedQuiz && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
           <div
             className="relative w-full max-w-3xl bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col text-slate-800"
@@ -543,6 +1049,132 @@ export const StudentSubmissionsDashboard: React.FC = () => {
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                    ผลการทำควิซ (Quiz Results)
+                  </span>
+                  <span className="text-xs text-slate-500">
+                    {new Date(selectedQuiz.submittedAt).toLocaleString('th-TH')}
+                  </span>
+                </div>
+                <h3 className="font-black text-lg text-slate-900 mt-1">
+                  {selectedQuiz.lessonTitle}
+                </h3>
+                <p className="text-xs text-slate-600">
+                  นักเรียน: <strong>{selectedQuiz.studentName}</strong> (@{selectedQuiz.username}) • ชั้น {selectedQuiz.gradeClass} • รหัส {selectedQuiz.studentId}
+                </p>
+              </div>
+
+              <button
+                onClick={() => setSelectedQuiz(null)}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-white rounded-full transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body: Quiz Questions & Answers */}
+            <div className="p-6 overflow-y-auto space-y-5 flex-1">
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-emerald-50 border border-emerald-200">
+                <span className="text-sm font-bold text-emerald-950">คะแนนที่ได้รวม:</span>
+                <span className="text-xl font-black font-mono text-emerald-700">
+                  {selectedQuiz.score} / {selectedQuiz.total} ข้อ
+                </span>
+              </div>
+
+              <div className="space-y-4">
+                {selectedQuiz.answers.map((item, idx) => (
+                  <div
+                    key={item.questionId || idx}
+                    className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5 text-xs sm:text-sm"
+                  >
+                    <div className="font-bold text-slate-900 flex items-start gap-2">
+                      <span className="w-6 h-6 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0 mt-0.5">
+                        {idx + 1}
+                      </span>
+                      <span>{item.questionText}</span>
+                    </div>
+
+                    <div className="p-3 bg-white rounded-xl border border-slate-200 text-xs space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-500">คำตอบที่นักเรียนเลือก:</span>
+                        {item.isCorrect ? (
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold flex items-center gap-1">
+                            <Check className="w-3 h-3" /> ถูกต้อง
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[11px] font-bold flex items-center gap-1">
+                            <X className="w-3 h-3" /> ไม่ถูกต้อง
+                          </span>
+                        )}
+                      </div>
+                      <p className="font-bold text-slate-900">{item.selectedOption}</p>
+                      {!item.isCorrect && (
+                        <p className="text-[11px] text-emerald-700 font-semibold pt-1">
+                          เฉลยที่ถูกต้อง: {item.correctOption}
+                        </p>
+                      )}
+                      {item.explanation && (
+                        <p className="text-[11px] text-slate-500 pt-1 border-t border-slate-100">
+                          คำอธิบายทางภูมิศาสตร์: {item.explanation}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Feedback Form */}
+              <form onSubmit={handleSaveQuizFeedback} className="pt-4 border-t border-slate-200 space-y-4">
+                <h4 className="font-extrabold text-sm text-slate-800 flex items-center gap-1.5">
+                  <Award className="w-4 h-4 text-emerald-600" />
+                  <span>บันทึกข้อเสนอแนะของครู (Teacher Feedback):</span>
+                </h4>
+
+                <textarea
+                  rows={2}
+                  value={quizFeedbackInput}
+                  onChange={(e) => setQuizFeedbackInput(e.target.value)}
+                  placeholder="พิมพ์ข้อชี้แนะหรือคำชมเชยแก่นักเรียนสำหรับการทำควิซชุดนี้..."
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:bg-white focus:outline-none focus:border-emerald-500"
+                />
+
+                <div className="flex items-center justify-between pt-1">
+                  {quizSaveSuccess ? (
+                    <span className="text-xs text-emerald-700 font-bold flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>บันทึกข้อเสนอแนะควิซสำเร็จ!</span>
+                    </span>
+                  ) : (
+                    <span className="text-xs text-slate-400">สถานะ: บันทึกเข้าประวัตินักเรียน</span>
+                  )}
+
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>บันทึกข้อเสนอแนะ</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 2: DETAILED WORKSHEET INSPECTION & GRADING                          */}
+      {/* ========================================================================= */}
+      {selectedWorksheet && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+          <div
+            className="relative w-full max-w-3xl bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col text-slate-800"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-6 py-4 bg-gradient-to-r from-teal-50 via-emerald-50 to-sky-50 border-b border-teal-100 flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-teal-100 text-teal-800">
                     ใบงานที่ {selectedWorksheet.worksheetNumber}
                   </span>
                   <span className="text-xs text-slate-500">{selectedWorksheet.submittedAt}</span>
@@ -551,7 +1183,7 @@ export const StudentSubmissionsDashboard: React.FC = () => {
                   {selectedWorksheet.worksheetTitle}
                 </h3>
                 <p className="text-xs text-slate-600">
-                  นักเรียน: <strong>{selectedWorksheet.studentName}</strong> ({selectedWorksheet.gradeClass}) • รหัส: {selectedWorksheet.studentId}
+                  นักเรียน: <strong>{selectedWorksheet.studentName}</strong> (@{selectedWorksheet.username || selectedWorksheet.studentId}) • {selectedWorksheet.gradeClass}
                 </p>
               </div>
 
@@ -566,7 +1198,7 @@ export const StudentSubmissionsDashboard: React.FC = () => {
             {/* Modal Body: Student Answers List */}
             <div className="p-6 overflow-y-auto space-y-5 flex-1">
               <h4 className="font-extrabold text-sm text-slate-800 flex items-center gap-1.5 border-b pb-2">
-                <HelpCircle className="w-4 h-4 text-emerald-600" />
+                <FileText className="w-4 h-4 text-teal-600" />
                 <span>คำตอบของนักเรียนรายข้อ:</span>
               </h4>
 
@@ -579,7 +1211,7 @@ export const StudentSubmissionsDashboard: React.FC = () => {
                     <div className="text-xs font-bold text-slate-900">
                       {item.prompt}
                     </div>
-                    <div className="p-3 bg-white rounded-xl border border-emerald-100 text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
+                    <div className="p-3 bg-white rounded-xl border border-teal-100 text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
                       {item.answer || <span className="text-slate-400 italic">ไม่ได้ระบุคำตอบ</span>}
                     </div>
                   </div>
@@ -589,7 +1221,7 @@ export const StudentSubmissionsDashboard: React.FC = () => {
               {/* Grading Form */}
               <form onSubmit={handleSaveWorksheetGrade} className="pt-4 border-t border-slate-200 space-y-4">
                 <h4 className="font-extrabold text-sm text-slate-800 flex items-center gap-1.5">
-                  <Award className="w-4 h-4 text-emerald-600" />
+                  <Award className="w-4 h-4 text-teal-600" />
                   <span>การประเมินและให้ข้อเสนอแนะครู (Teacher Assessment):</span>
                 </h4>
 
@@ -607,7 +1239,7 @@ export const StudentSubmissionsDashboard: React.FC = () => {
                       onChange={(e) => setWsScoreInput(e.target.value)}
                       placeholder="เช่น 9.5"
                       required
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold font-mono focus:bg-white focus:outline-none focus:border-emerald-500"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold font-mono focus:bg-white focus:outline-none focus:border-teal-500"
                     />
                   </div>
 
@@ -620,24 +1252,26 @@ export const StudentSubmissionsDashboard: React.FC = () => {
                       value={wsFeedbackInput}
                       onChange={(e) => setWsFeedbackInput(e.target.value)}
                       placeholder="พิมพ์คำชมเชยหรือข้อชี้แนะเพื่อพัฒนาต่อยอด..."
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:bg-white focus:outline-none focus:border-emerald-500"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:bg-white focus:outline-none focus:border-teal-500"
                     />
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between pt-2">
                   {wsSaveSuccess ? (
-                    <span className="text-xs text-emerald-700 font-bold flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span className="text-xs text-teal-700 font-bold flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-teal-600" />
                       <span>บันทึกผลการตรวจเรียบร้อยแล้ว!</span>
                     </span>
                   ) : (
-                    <span className="text-xs text-slate-400">สถานะปัจจุบัน: {selectedWorksheet.status === 'graded' ? 'ตรวจแล้ว' : 'รอการตรวจ'}</span>
+                    <span className="text-xs text-slate-400">
+                      สถานะ: {selectedWorksheet.status === 'graded' ? 'ตรวจแล้ว' : 'รอการตรวจ'}
+                    </span>
                   )}
 
                   <button
                     type="submit"
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer"
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-700 hover:from-teal-700 hover:to-emerald-800 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer"
                   >
                     <Save className="w-4 h-4" />
                     <span>บันทึกผลการตรวจใบงาน</span>
@@ -649,9 +1283,9 @@ export const StudentSubmissionsDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* ======================================================== */}
-      {/* MODAL 2: DETAILED JOURNAL INSPECTION & GRADING           */}
-      {/* ======================================================== */}
+      {/* ========================================================================= */}
+      {/* MODAL 3: DETAILED JOURNAL INSPECTION & GRADING                            */}
+      {/* ========================================================================= */}
       {selectedJournal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
           <div
@@ -671,7 +1305,7 @@ export const StudentSubmissionsDashboard: React.FC = () => {
                   กรณีศึกษา: {selectedJournal.caseStudyTitle}
                 </h3>
                 <p className="text-xs text-slate-600">
-                  นักเรียน: <strong>{selectedJournal.studentName}</strong> ({selectedJournal.gradeClass}) • รหัส: {selectedJournal.studentId}
+                  นักเรียน: <strong>{selectedJournal.studentName}</strong> (@{selectedJournal.username || selectedJournal.studentId}) • {selectedJournal.gradeClass}
                 </p>
               </div>
 
@@ -782,12 +1416,14 @@ export const StudentSubmissionsDashboard: React.FC = () => {
 
                 <div className="flex items-center justify-between pt-2">
                   {jnSaveSuccess ? (
-                    <span className="text-xs text-teal-700 font-bold flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4 text-teal-600" />
+                    <span className="text-xs text-sky-700 font-bold flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-sky-600" />
                       <span>บันทึกผลการตรวจอนุทินเรียบร้อยแล้ว!</span>
                     </span>
                   ) : (
-                    <span className="text-xs text-slate-400">สถานะปัจจุบัน: {selectedJournal.status === 'graded' ? 'ตรวจแล้ว' : 'รอการตรวจ'}</span>
+                    <span className="text-xs text-slate-400">
+                      สถานะ: {selectedJournal.status === 'graded' ? 'ตรวจแล้ว' : 'รอการตรวจ'}
+                    </span>
                   )}
 
                   <button
@@ -799,6 +1435,95 @@ export const StudentSubmissionsDashboard: React.FC = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 4: FULL WEBBOARD TOPIC & DISCUSSION VIEWER                          */}
+      {/* ========================================================================= */}
+      {selectedTopic && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+          <div
+            className="relative w-full max-w-3xl bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col text-slate-800"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-6 py-4 bg-gradient-to-r from-indigo-50 via-teal-50 to-emerald-50 border-b border-indigo-100 flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
+                    เว็บบอร์ดการอภิปราย (Webboard Discussion)
+                  </span>
+                  <span className="text-xs text-slate-500">
+                    {new Date(selectedTopic.createdAt).toLocaleString('th-TH')}
+                  </span>
+                </div>
+                <h3 className="font-black text-lg text-slate-900 mt-1">
+                  {selectedTopic.title}
+                </h3>
+                <p className="text-xs text-slate-600">
+                  ผู้โพสต์: <strong>{selectedTopic.authorName}</strong> ({selectedTopic.authorRole})
+                </p>
+              </div>
+
+              <button
+                onClick={() => setSelectedTopic(null)}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-white rounded-full transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-4 flex-1">
+              {/* Topic Prompt & Content */}
+              <div className="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100 space-y-2">
+                <span className="text-xs font-bold text-indigo-900 block">
+                  เนื้อหากระทู้ / คำตอบที่ตั้งโดยนักเรียน:
+                </span>
+                <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium bg-white p-3.5 rounded-xl border border-indigo-100">
+                  {selectedTopic.content}
+                </p>
+              </div>
+
+              {/* Replies list */}
+              <div className="space-y-3 pt-2">
+                <h4 className="font-extrabold text-sm text-slate-800 flex items-center gap-1.5 border-b pb-2">
+                  <MessageSquare className="w-4 h-4 text-indigo-600" />
+                  <span>การตอบกลับและการอภิปราย ({selectedTopic.replies.length} ข้อความ):</span>
+                </h4>
+
+                {selectedTopic.replies.length === 0 ? (
+                  <div className="py-6 text-center text-xs text-slate-400">
+                    ยังไม่มีข้อความตอบกลับในกระทู้นี้
+                  </div>
+                ) : (
+                  selectedTopic.replies.map((reply) => (
+                    <div
+                      key={reply.id}
+                      className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs sm:text-sm space-y-1"
+                    >
+                      <div className="flex items-center justify-between text-xs text-slate-500">
+                        <strong className="text-slate-900">{reply.authorName}</strong>
+                        <span>{new Date(reply.createdAt).toLocaleString('th-TH')}</span>
+                      </div>
+                      <p className="text-slate-700 leading-relaxed pt-1">{reply.content}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-end">
+              <button
+                onClick={() => setSelectedTopic(null)}
+                className="px-5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs cursor-pointer"
+              >
+                ปิดหน้าต่าง
+              </button>
             </div>
           </div>
         </div>

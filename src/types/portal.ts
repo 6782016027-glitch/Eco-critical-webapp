@@ -143,6 +143,7 @@ export interface StudentWorksheetSubmission {
   worksheetTitle: string;
   studentId: string;
   studentName: string;
+  username?: string;
   gradeClass: string;
   submittedAt: string;
   answers: WorksheetAnswerItem[];
@@ -156,6 +157,7 @@ export interface StudentJournalSubmission {
   id: string;
   studentId: string;
   studentName: string;
+  username?: string;
   gradeClass: string;
   caseStudyTitle: string;
   entryDate: string;
@@ -168,5 +170,30 @@ export interface StudentJournalSubmission {
   maxScore: number;
   teacherFeedback?: string;
   status: 'pending' | 'graded';
+}
+
+export interface QuizAnswerItem {
+  questionId: string;
+  questionText: string;
+  selectedOption: string;
+  correctOption: string;
+  isCorrect: boolean;
+  explanation: string;
+}
+
+export interface StudentQuizSubmission {
+  id: string;
+  lessonId: string;
+  lessonTitle: string;
+  studentId: string;
+  studentName: string;
+  username: string;
+  gradeClass: string;
+  submittedAt: string;
+  score: number;
+  total: number;
+  answers: QuizAnswerItem[];
+  teacherFeedback?: string;
+  status: 'graded' | 'pending';
 }
 
