@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { usePortal } from '../../context/PortalContext';
-import { User, UserRole } from '../../types/portal';
+import { User, UserRole, UserStatus } from '../../types/portal';
 import { ALL_CLASSROOMS } from '../../constants/classrooms';
 import {
   Users,
@@ -24,7 +24,19 @@ import {
   Edit3,
   Check,
   RotateCcw,
+  Upload,
+  FileSpreadsheet,
+  Download,
+  AlertTriangle,
+  FileUp,
+  Sparkles,
+  Info,
 } from 'lucide-react';
+import {
+  downloadStudentImportTemplate,
+  parseStudentCSV,
+  ParsedStudentRow,
+} from '../../utils/csvImport';
 
 export const UserManager: React.FC = () => {
   const {
@@ -33,6 +45,7 @@ export const UserManager: React.FC = () => {
     rejectUser,
     updateUserRole,
     addUser,
+    addUsersBulk,
     deleteUser,
     resetStudentPassword,
     updateStudentCredentials,
@@ -66,6 +79,106 @@ export const UserManager: React.FC = () => {
   const [editGradeClass, setEditGradeClass] = useState('');
   const [editSeatNumber, setEditSeatNumber] = useState('1');
   const [editSuccessMsg, setEditSuccessMsg] = useState('');
+
+  // Bulk CSV Import State
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importFileName, setImportFileName] = useState('');
+  const [importRawText, setImportRawText] = useState('');
+  const [importParsedResult, setImportParsedResult] = useState<{
+    students: ParsedStudentRow[];
+    totalRows: number;
+    validCount: number;
+    invalidCount: number;
+    duplicateCount: number;
+  } | null>(null);
+  const [importDefaultStatus, setImportDefaultStatus] = useState<UserStatus>('approved');
+  const [importOverwriteDuplicates, setImportOverwriteDuplicates] = useState(false);
+  const [importError, setImportError] = useState('');
+  const [importToastMsg, setImportToastMsg] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Trigger feedback toast
+  const triggerImportToast = (msg: string) => {
+    setImportToastMsg(msg);
+    setTimeout(() => setImportToastMsg(null), 3500);
+  };
+
+  // Process uploaded CSV file
+  const processCSVFile = (file: File) => {
+    setImportError('');
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      setImportError('กรุณาอัปโหลดไฟล์ที่มีนามสกุล .csv เท่านั้น');
+      return;
+    }
+
+    setImportFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      if (!text) {
+        setImportError('ไม่สามารถอ่านเนื้อหาในไฟล์ CSV ได้ หรือไฟล์ว่างเปล่า');
+        return;
+      }
+      setImportRawText(text);
+      const existingUsernames = new Set(users.map((u) => u.username.toLowerCase()));
+      const result = parseStudentCSV(text, existingUsernames, importDefaultStatus);
+      setImportParsedResult(result);
+    };
+    reader.onerror = () => {
+      setImportError('เกิดข้อผิดพลาดในการอ่านไฟล์');
+    };
+    reader.readAsText(file, 'utf-8');
+  };
+
+  // Re-parse when default status changes
+  const handleStatusChange = (newStatus: UserStatus) => {
+    setImportDefaultStatus(newStatus);
+    if (importRawText) {
+      const existingUsernames = new Set(users.map((u) => u.username.toLowerCase()));
+      const result = parseStudentCSV(importRawText, existingUsernames, newStatus);
+      setImportParsedResult(result);
+    }
+  };
+
+  // Confirm Bulk Import
+  const handleConfirmImport = () => {
+    if (!importParsedResult || importParsedResult.students.length === 0) return;
+
+    const eligibleStudents = importParsedResult.students.filter((st) => {
+      if (st.isDuplicateInFile) return false;
+      if (st.isDuplicateInDB) {
+        return importOverwriteDuplicates && st.name && st.username;
+      }
+      return st.isValid;
+    });
+
+    if (eligibleStudents.length === 0) {
+      setImportError('ไม่พบบัญชีนักเรียนที่พร้อมนำเข้า กรุณาตรวจสอบข้อมูลในไฟล์');
+      return;
+    }
+
+    const payload = eligibleStudents.map((st) => ({
+      name: st.name,
+      username: st.username,
+      password: st.password || 'Student1234',
+      role: 'student' as UserRole,
+      status: importDefaultStatus,
+      studentId: st.studentId,
+      gradeClass: st.gradeClass,
+      seatNumber: st.seatNumber,
+    }));
+
+    const result = addUsersBulk(payload, importOverwriteDuplicates);
+    triggerImportToast(
+      `นำเข้าข้อมูลนักเรียนสำเร็จเรียบร้อย! (เพิ่มใหม่ ${result.addedCount} บัญชี${result.updatedCount > 0 ? `, อัปเดต ${result.updatedCount} บัญชี` : ''})`
+    );
+
+    setShowImportModal(false);
+    setImportParsedResult(null);
+    setImportFileName('');
+    setImportRawText('');
+    setImportError('');
+  };
 
   const togglePasswordVisibility = (userId: string) => {
     setRevealedPasswords((prev) => ({
@@ -207,6 +320,21 @@ export const UserManager: React.FC = () => {
           </button>
 
           <button
+            onClick={() => {
+              setShowImportModal(true);
+              setImportParsedResult(null);
+              setImportFileName('');
+              setImportRawText('');
+              setImportError('');
+            }}
+            className="px-4 py-2 bg-gradient-to-r from-sky-600 via-indigo-600 to-sky-700 hover:from-sky-700 hover:to-indigo-800 text-white font-black text-xs sm:text-sm rounded-2xl shadow-md shadow-sky-800/20 transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2 cursor-pointer"
+            title="นำเข้ารายชื่อนักเรียนจำนวนมากจากไฟล์ CSV"
+          >
+            <Upload className="w-4 h-4" />
+            <span>นำเข้าข้อมูลนักเรียน (Import CSV)</span>
+          </button>
+
+          <button
             onClick={() => setShowAddModal(true)}
             className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs sm:text-sm rounded-2xl shadow-md shadow-emerald-700/20 transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2 cursor-pointer"
           >
@@ -215,6 +343,19 @@ export const UserManager: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Floating Success Toast */}
+      {importToastMsg && (
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 border border-emerald-500/40 animate-in slide-in-from-bottom-4 duration-200">
+          <div className="w-8 h-8 rounded-xl bg-emerald-500 text-slate-950 flex items-center justify-center font-black">
+            <Check className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="font-bold text-xs sm:text-sm text-emerald-300">ดำเนินการสำเร็จ</div>
+            <div className="text-[11px] text-slate-300">{importToastMsg}</div>
+          </div>
+        </div>
+      )}
 
       {/* Pending Approval Priority Alert Banner */}
       {pendingUsers.length > 0 && (
@@ -813,6 +954,352 @@ export const UserManager: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* BULK CSV IMPORT STUDENT DATA MODAL                       */}
+      {/* ======================================================== */}
+      {showImportModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 z-50 animate-in fade-in overflow-y-auto">
+          <div
+            className="bg-white rounded-3xl max-w-3xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 my-auto max-h-[92vh] flex flex-col text-slate-800 animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 text-white flex items-center justify-center font-bold shadow-md shadow-sky-900/20">
+                  <Upload className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-lg text-slate-900">
+                    นำเข้าข้อมูลนักเรียนแบบกลุ่ม (Import Student Accounts from CSV)
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    อัปโหลดไฟล์ CSV เพื่อเพิ่มหรืออัปเดตบัญชีนักเรียนจำนวนมากในระบบโดยอัตโนมัติ
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowImportModal(false)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="space-y-4 overflow-y-auto flex-1 pr-1">
+              {/* Template Download Help Banner */}
+              <div className="p-3.5 rounded-2xl bg-sky-50/70 border border-sky-200 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <FileSpreadsheet className="w-5 h-5 text-sky-600 shrink-0" />
+                  <div>
+                    <span className="font-bold text-sky-950 block">ยังไม่มีไฟล์ในรูปแบบที่ถูกต้อง?</span>
+                    <span className="text-[11px] text-sky-800">
+                      ดาวน์โหลดไฟล์ตัวอย่าง (Template) ที่มีหัวคอลัมน์มาตรฐานเพื่อนำไปกรอกข้อมูล
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={downloadStudentImportTemplate}
+                  className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-sky-100 border border-sky-300 text-sky-900 font-bold text-xs shadow-2xs flex items-center gap-1.5 shrink-0 cursor-pointer transition-colors"
+                >
+                  <Download className="w-3.5 h-3.5 text-sky-700" />
+                  <span>ดาวน์โหลดไฟล์ตัวอย่าง CSV</span>
+                </button>
+              </div>
+
+              {/* Drag and Drop Upload Area */}
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDragging(false);
+                  const files = e.dataTransfer.files;
+                  if (files && files.length > 0) {
+                    processCSVFile(files[0]);
+                  }
+                }}
+                className={`p-6 border-2 border-dashed rounded-3xl text-center transition-all cursor-pointer ${
+                  isDragging
+                    ? 'border-indigo-500 bg-indigo-50/60 scale-[1.01]'
+                    : importFileName
+                    ? 'border-emerald-300 bg-emerald-50/30'
+                    : 'border-slate-300 hover:border-slate-400 bg-slate-50/50 hover:bg-slate-50'
+                }`}
+                onClick={() => {
+                  const input = document.getElementById('csv-file-input');
+                  input?.click();
+                }}
+              >
+                <input
+                  id="csv-file-input"
+                  type="file"
+                  accept=".csv"
+                  className="hidden"
+                  onChange={(e) => {
+                    const files = e.target.files;
+                    if (files && files.length > 0) {
+                      processCSVFile(files[0]);
+                    }
+                  }}
+                />
+
+                <div className="flex flex-col items-center justify-center space-y-2">
+                  <div
+                    className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-xs transition-colors ${
+                      importFileName
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-white text-slate-500 border border-slate-200'
+                    }`}
+                  >
+                    {importFileName ? (
+                      <Check className="w-6 h-6 text-emerald-600" />
+                    ) : (
+                      <FileUp className="w-6 h-6 text-sky-600" />
+                    )}
+                  </div>
+
+                  <div>
+                    {importFileName ? (
+                      <div>
+                        <span className="font-extrabold text-sm text-emerald-900 block">
+                          เลือกไฟล์: {importFileName}
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          คลิกหรือลากไฟล์ใหม่มาวางหากต้องการเปลี่ยนไฟล์
+                        </span>
+                      </div>
+                    ) : (
+                      <div>
+                        <span className="font-extrabold text-sm text-slate-850 block">
+                          คลิกเพื่อเลือกไฟล์ หรือลากไฟล์ CSV มาวางที่นี่
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          รองรับไฟล์ .csv (UTF-8) ที่มีคอลัมน์ชื่อ, username, รหัสผ่าน, ชั้น, เลขที่
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Error Message */}
+              {importError && (
+                <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{importError}</span>
+                </div>
+              )}
+
+              {/* Configuration Toggles */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-3">
+                <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>การตั้งค่าการนำเข้า (Import Options):</span>
+                </span>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Status Setting */}
+                  <div className="space-y-1.5">
+                    <label className="font-semibold text-slate-700 block">
+                      สถานะบัญชีที่นำเข้า:
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <label className="flex items-center gap-1.5 p-2 rounded-xl bg-white border border-slate-200 hover:border-emerald-300 cursor-pointer flex-1">
+                        <input
+                          type="radio"
+                          name="import_status"
+                          value="approved"
+                          checked={importDefaultStatus === 'approved'}
+                          onChange={() => handleStatusChange('approved')}
+                          className="text-emerald-600"
+                        />
+                        <span className="font-bold text-slate-800">อนุมัติทันที (Approved)</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 p-2 rounded-xl bg-white border border-slate-200 hover:border-amber-300 cursor-pointer flex-1">
+                        <input
+                          type="radio"
+                          name="import_status"
+                          value="pending"
+                          checked={importDefaultStatus === 'pending'}
+                          onChange={() => handleStatusChange('pending')}
+                          className="text-amber-600"
+                        />
+                        <span className="font-bold text-slate-800">รออนุมัติ (Pending)</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Duplicate Handling */}
+                  <div className="space-y-1.5">
+                    <label className="font-semibold text-slate-700 block">
+                      กรณีพบ Username ซ้ำในระบบ:
+                    </label>
+                    <label className="flex items-center gap-2 p-2 rounded-xl bg-white border border-slate-200 hover:border-indigo-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={importOverwriteDuplicates}
+                        onChange={(e) => setImportOverwriteDuplicates(e.target.checked)}
+                        className="rounded text-indigo-600"
+                      />
+                      <span className="font-semibold text-slate-800">
+                        อัปเดตข้อมูลของบัญชีเดิม (Overwrite existing user data)
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Parsed Preview Table */}
+              {importParsedResult && (
+                <div className="space-y-2.5 pt-1">
+                  {/* Summary Badges */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <span className="font-extrabold text-slate-900 flex items-center gap-1.5">
+                      <span>ตัวอย่างข้อมูลในไฟล์ ({importParsedResult.totalRows} แถว):</span>
+                    </span>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-900 font-bold text-[11px] flex items-center gap-1">
+                        <Check className="w-3 h-3 text-emerald-700" />
+                        พร้อมนำเข้า {importParsedResult.validCount} บัญชี
+                      </span>
+                      {importParsedResult.duplicateCount > 0 && (
+                        <span className="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 font-bold text-[11px] flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3 text-amber-700" />
+                          ซ้ำในระบบ {importParsedResult.duplicateCount} บัญชี{' '}
+                          {importOverwriteDuplicates && '(จะอัปเดต)'}
+                        </span>
+                      )}
+                      {importParsedResult.invalidCount > 0 && (
+                        <span className="px-2.5 py-1 rounded-lg bg-rose-100 text-rose-900 font-bold text-[11px] flex items-center gap-1">
+                          <X className="w-3 h-3 text-rose-700" />
+                          ไม่สมบูรณ์ {importParsedResult.invalidCount} แถว
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Scrollable Preview Table */}
+                  <div className="max-h-56 overflow-y-auto border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
+                    <table className="w-full text-left text-[11px]">
+                      <thead className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold sticky top-0">
+                        <tr>
+                          <th className="py-2 px-3">แถว</th>
+                          <th className="py-2 px-3">ชื่อ-นามสกุล</th>
+                          <th className="py-2 px-3">Username</th>
+                          <th className="py-2 px-3">รหัสผ่าน</th>
+                          <th className="py-2 px-3">รหัส / ชั้น / เลขที่</th>
+                          <th className="py-2 px-3 text-center">สถานะ</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 bg-white">
+                        {importParsedResult.students.map((st) => {
+                          const willImport = st.isValid || (importOverwriteDuplicates && st.isDuplicateInDB && st.name && st.username);
+
+                          return (
+                            <tr
+                              key={st.rowIndex}
+                              className={`transition-colors ${
+                                willImport ? 'hover:bg-emerald-50/40' : 'bg-rose-50/40'
+                              }`}
+                            >
+                              <td className="py-2 px-3 font-mono text-slate-400">
+                                {st.rowIndex}
+                              </td>
+                              <td className="py-2 px-3 font-bold text-slate-900">
+                                {st.name || <span className="text-rose-500 italic">ไม่ระบุชื่อ</span>}
+                              </td>
+                              <td className="py-2 px-3 font-mono font-semibold text-slate-800">
+                                @{st.username || <span className="text-rose-500 italic">ว่าง</span>}
+                              </td>
+                              <td className="py-2 px-3 font-mono text-slate-600">
+                                {st.password || 'Student1234'}
+                              </td>
+                              <td className="py-2 px-3 text-slate-600">
+                                {st.studentId} • {st.gradeClass}
+                                {st.seatNumber && ` (เลขที่ ${st.seatNumber})`}
+                              </td>
+                              <td className="py-2 px-3 text-center whitespace-nowrap">
+                                {st.isValid ? (
+                                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">
+                                    พร้อมนำเข้า
+                                  </span>
+                                ) : st.isDuplicateInDB ? (
+                                  <span
+                                    className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
+                                      importOverwriteDuplicates
+                                        ? 'bg-indigo-100 text-indigo-900'
+                                        : 'bg-amber-100 text-amber-900'
+                                    }`}
+                                  >
+                                    {importOverwriteDuplicates ? 'จะอัปเดตข้อมูล' : 'ซ้ำในระบบ (ข้าม)'}
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 font-bold text-[10px]">
+                                    {st.errors[0] || 'ข้อมูลไม่ครบ'}
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-between shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowImportModal(false)}
+                className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-bold text-xs cursor-pointer"
+              >
+                ยกเลิก
+              </button>
+
+              <button
+                type="button"
+                disabled={
+                  !importParsedResult ||
+                  importParsedResult.students.filter(
+                    (st) => st.isValid || (importOverwriteDuplicates && st.isDuplicateInDB && st.name && st.username)
+                  ).length === 0
+                }
+                onClick={handleConfirmImport}
+                className={`px-5 py-2.5 rounded-xl text-white font-black text-xs sm:text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer ${
+                  !importParsedResult ||
+                  importParsedResult.students.filter(
+                    (st) => st.isValid || (importOverwriteDuplicates && st.isDuplicateInDB && st.name && st.username)
+                  ).length === 0
+                    ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none'
+                    : 'bg-gradient-to-r from-sky-600 via-indigo-600 to-emerald-600 hover:from-sky-700 hover:to-emerald-700 hover:scale-105 active:scale-95 shadow-sky-900/20'
+                }`}
+              >
+                <Check className="w-4 h-4" />
+                <span>
+                  {importParsedResult
+                    ? `ยืนยันนำเข้า ${
+                        importParsedResult.students.filter(
+                          (st) => st.isValid || (importOverwriteDuplicates && st.isDuplicateInDB && st.name && st.username)
+                        ).length
+                      } บัญชีนักเรียน`
+                    : 'ยืนยันการนำเข้า'}
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       )}

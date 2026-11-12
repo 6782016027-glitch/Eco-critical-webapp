@@ -44,6 +44,7 @@ interface PortalContextType {
   updateUserRole: (userId: string, newRole: UserRole) => void;
   deleteUser: (userId: string) => void;
   addUser: (user: Omit<User, 'id' | 'registeredAt'>) => User;
+  addUsersBulk: (newUsers: Omit<User, 'id' | 'registeredAt'>[], overwriteDuplicates?: boolean) => { addedCount: number; updatedCount: number };
   resetStudentPassword: (userId: string, newPassword: string) => void;
   updateStudentCredentials: (userId: string, data: Partial<User>) => void;
   previewStudentLogin: () => void;
@@ -403,6 +404,49 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
     setUsers((prev) => [newUser, ...prev]);
     return newUser;
+  };
+
+  const addUsersBulk = (
+    newUsersData: Omit<User, 'id' | 'registeredAt'>[],
+    overwriteDuplicates: boolean = false
+  ): { addedCount: number; updatedCount: number } => {
+    let addedCount = 0;
+    let updatedCount = 0;
+
+    setUsers((prev) => {
+      let currentUsers = [...prev];
+      const now = Date.now();
+
+      newUsersData.forEach((item, index) => {
+        const cleanUsername = item.username.trim().toLowerCase();
+        const existingIdx = currentUsers.findIndex(
+          (u) => u.username.trim().toLowerCase() === cleanUsername
+        );
+
+        if (existingIdx >= 0) {
+          if (overwriteDuplicates) {
+            currentUsers[existingIdx] = {
+              ...currentUsers[existingIdx],
+              ...item,
+              username: item.username.trim(),
+              name: item.name.trim(),
+            };
+            updatedCount++;
+          }
+        } else {
+          const newUser: User = {
+            ...item,
+            id: `usr_${now}_${index}`,
+            registeredAt: new Date().toISOString(),
+          };
+          currentUsers = [newUser, ...currentUsers];
+          addedCount++;
+        }
+      });
+      return currentUsers;
+    });
+
+    return { addedCount, updatedCount };
   };
 
   const resetStudentPassword = (userId: string, newPassword: string) => {
@@ -889,6 +933,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         updateUserRole,
         deleteUser,
         addUser,
+        addUsersBulk,
         resetStudentPassword,
         updateStudentCredentials,
         previewStudentLogin,

@@ -34,7 +34,18 @@ import {
   Check,
   AlertCircle,
   ExternalLink,
+  Download,
+  FileSpreadsheet,
+  FileDown,
+  Layers,
 } from 'lucide-react';
+import {
+  exportQuizSubmissionsToCSV,
+  exportWorksheetSubmissionsToCSV,
+  exportJournalSubmissionsToCSV,
+  exportWebboardToCSV,
+  exportAllSubmissionsToCSV,
+} from '../../utils/csvExport';
 
 export const StudentSubmissionsDashboard: React.FC = () => {
   const {
@@ -59,6 +70,10 @@ export const StudentSubmissionsDashboard: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'graded'>('all');
 
+  // Export CSV Modal & Toast Feedback states
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportToast, setExportToast] = useState<string | null>(null);
+
   // Modal inspection states
   const [selectedQuiz, setSelectedQuiz] = useState<StudentQuizSubmission | null>(null);
   const [selectedWorksheet, setSelectedWorksheet] = useState<StudentWorksheetSubmission | null>(null);
@@ -78,6 +93,14 @@ export const StudentSubmissionsDashboard: React.FC = () => {
   const [jnScoreInput, setJnScoreInput] = useState<string>('');
   const [jnFeedbackInput, setJnFeedbackInput] = useState<string>('');
   const [jnSaveSuccess, setJnSaveSuccess] = useState(false);
+
+  // Trigger feedback toast
+  const triggerExportToast = (message: string) => {
+    setExportToast(message);
+    setTimeout(() => {
+      setExportToast(null);
+    }, 3500);
+  };
 
   // Open Quiz Modal
   const openQuizModal = (quiz: StudentQuizSubmission) => {
@@ -157,7 +180,11 @@ export const StudentSubmissionsDashboard: React.FC = () => {
       (q.username && q.username.toLowerCase().includes(searchTerm.toLowerCase())) ||
       q.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
       q.lessonTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      q.answers.some((a) => a.questionText.toLowerCase().includes(searchTerm.toLowerCase()) || a.selectedOption.toLowerCase().includes(searchTerm.toLowerCase()));
+      q.answers.some(
+        (a) =>
+          a.questionText.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          a.selectedOption.toLowerCase().includes(searchTerm.toLowerCase())
+      );
     const matchStatus = statusFilter === 'all' || q.status === statusFilter;
     return matchSearch && matchStatus;
   });
@@ -169,7 +196,11 @@ export const StudentSubmissionsDashboard: React.FC = () => {
       (w.username && w.username.toLowerCase().includes(searchTerm.toLowerCase())) ||
       w.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
       w.worksheetTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      w.answers.some((a) => a.prompt.toLowerCase().includes(searchTerm.toLowerCase()) || a.answer.toLowerCase().includes(searchTerm.toLowerCase()));
+      w.answers.some(
+        (a) =>
+          a.prompt.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          a.answer.toLowerCase().includes(searchTerm.toLowerCase())
+      );
     const matchStatus = statusFilter === 'all' || w.status === statusFilter;
     return matchSearch && matchStatus;
   });
@@ -195,7 +226,11 @@ export const StudentSubmissionsDashboard: React.FC = () => {
       t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       t.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
       t.authorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.replies.some((r) => r.authorName.toLowerCase().includes(searchTerm.toLowerCase()) || r.content.toLowerCase().includes(searchTerm.toLowerCase()));
+      t.replies.some(
+        (r) =>
+          r.authorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          r.content.toLowerCase().includes(searchTerm.toLowerCase())
+      );
     return matchSearch;
   });
 
@@ -216,8 +251,81 @@ export const StudentSubmissionsDashboard: React.FC = () => {
     (journalSubmissions?.filter((j) => j.status === 'graded').length || 0) +
     (quizSubmissions?.filter((q) => q.status === 'graded').length || 0);
 
+  // Export handlers
+  const handleExportCurrentTab = () => {
+    if (activeTab === 'quiz') {
+      exportQuizSubmissionsToCSV(filteredQuizzes.length > 0 ? filteredQuizzes : quizSubmissions);
+      triggerExportToast(`ส่งออกผลควิซ (${filteredQuizzes.length > 0 ? filteredQuizzes.length : quizSubmissions.length} ชุด) เป็น CSV สำเร็จ`);
+    } else if (activeTab === 'worksheets') {
+      exportWorksheetSubmissionsToCSV(filteredWorksheets.length > 0 ? filteredWorksheets : worksheetSubmissions);
+      triggerExportToast(`ส่งออกคำตอบใบงาน (${filteredWorksheets.length > 0 ? filteredWorksheets.length : worksheetSubmissions.length} ชุด) เป็น CSV สำเร็จ`);
+    } else if (activeTab === 'journals') {
+      exportJournalSubmissionsToCSV(filteredJournals.length > 0 ? filteredJournals : journalSubmissions);
+      triggerExportToast(`ส่งออกสมุดอนุทิน (${filteredJournals.length > 0 ? filteredJournals.length : journalSubmissions.length} บันทึก) เป็น CSV สำเร็จ`);
+    } else if (activeTab === 'webboard') {
+      exportWebboardToCSV(filteredForumTopics.length > 0 ? filteredForumTopics : forumTopics);
+      triggerExportToast(`ส่งออกกระทู้เว็บบอร์ด (${filteredForumTopics.length > 0 ? filteredForumTopics.length : forumTopics.length} กระทู้) เป็น CSV สำเร็จ`);
+    }
+  };
+
+  const handleExportQuizOnly = () => {
+    exportQuizSubmissionsToCSV(quizSubmissions);
+    triggerExportToast(`ส่งออกผลควิซ (${quizSubmissions.length} ชุด) เป็น CSV สำเร็จ`);
+    setShowExportModal(false);
+  };
+
+  const handleExportWorksheetsOnly = () => {
+    exportWorksheetSubmissionsToCSV(worksheetSubmissions);
+    triggerExportToast(`ส่งออกใบงาน (${worksheetSubmissions.length} ชุด) เป็น CSV สำเร็จ`);
+    setShowExportModal(false);
+  };
+
+  const handleExportJournalsOnly = () => {
+    exportJournalSubmissionsToCSV(journalSubmissions);
+    triggerExportToast(`ส่งออกสมุดอนุทิน (${journalSubmissions.length} บันทึก) เป็น CSV สำเร็จ`);
+    setShowExportModal(false);
+  };
+
+  const handleExportWebboardOnly = () => {
+    exportWebboardToCSV(forumTopics);
+    triggerExportToast(`ส่งออกกระทู้เว็บบอร์ด (${forumTopics.length} กระทู้) เป็น CSV สำเร็จ`);
+    setShowExportModal(false);
+  };
+
+  const handleExportMasterAll = () => {
+    exportAllSubmissionsToCSV(quizSubmissions, worksheetSubmissions, journalSubmissions, forumTopics);
+    triggerExportToast(`ส่งออกรวมทุกประเภท (${grandTotal} รายการ) เป็น CSV สำเร็จ`);
+    setShowExportModal(false);
+  };
+
+  const getActiveTabTitle = () => {
+    switch (activeTab) {
+      case 'quiz':
+        return 'ควิซ (Quiz)';
+      case 'worksheets':
+        return 'ใบงาน (Worksheets)';
+      case 'journals':
+        return 'สมุดอนุทิน (Journal/Diary)';
+      case 'webboard':
+        return 'เว็บบอร์ด (Webboard)';
+    }
+  };
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-150">
+    <div className="space-y-6 animate-in fade-in duration-150 relative">
+      {/* Toast Notification */}
+      {exportToast && (
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 border border-emerald-500/40 animate-in slide-in-from-bottom-4 duration-200">
+          <div className="w-8 h-8 rounded-xl bg-emerald-500 text-slate-950 flex items-center justify-center font-black">
+            <Check className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="font-bold text-xs sm:text-sm text-emerald-300">ดาวน์โหลดเสร็จสมบูรณ์</div>
+            <div className="text-[11px] text-slate-300">{exportToast}</div>
+          </div>
+        </div>
+      )}
+
       {/* 1. Header Hero Card */}
       <div className="p-6 sm:p-7 bg-white rounded-3xl border border-emerald-200/80 shadow-xs flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div>
@@ -230,23 +338,32 @@ export const StudentSubmissionsDashboard: React.FC = () => {
             <span>แดชบอร์ดคำตอบนักเรียน (Student Submissions Dashboard)</span>
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
-            รวบรวมคำตอบของนักเรียนครบทั้ง 4 ด้าน: <strong>1. ควิซ (Quiz)</strong>, <strong>2. ใบงาน (Worksheets)</strong>, <strong>3. สมุดอนุทิน (Journal/Diary)</strong>, และ <strong>4. เว็บบอร์ด (Webboard)</strong> พร้อมระบบบันทึกคะแนนและส่งข้อเสนอแนะรายบุคคล
+            รวบรวมคำตอบของนักเรียนครบทั้ง 4 ด้าน: <strong>1. ควิซ (Quiz)</strong>, <strong>2. ใบงาน (Worksheets)</strong>, <strong>3. สมุดอนุทิน (Journal/Diary)</strong>, และ <strong>4. เว็บบอร์ด (Webboard)</strong> พร้อมระบบบันทึกคะแนนและส่งออกไฟล์ CSV
           </p>
         </div>
 
-        {/* Global Stats Badges */}
+        {/* Global Stats Badges & Export Trigger */}
         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <button
+            onClick={() => setShowExportModal(true)}
+            className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-600 hover:from-emerald-700 hover:to-sky-700 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-emerald-900/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+            title="เปิดเมนูส่งออกคำตอบนักเรียนเป็นไฟล์ CSV"
+          >
+            <Download className="w-4 h-4" />
+            <span>ส่งออก CSV (Export CSV)</span>
+          </button>
+
           <div className="px-3.5 py-2 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold flex items-center gap-1.5 shadow-2xs">
             <Clock className="w-4 h-4 text-amber-600" />
-            <span>รอตรวจ {pendingCount} รายการ</span>
+            <span>รอตรวจ {pendingCount}</span>
           </div>
           <div className="px-3.5 py-2 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold flex items-center gap-1.5 shadow-2xs">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <span>ตรวจแล้ว {gradedCount} รายการ</span>
+            <span>ตรวจแล้ว {gradedCount}</span>
           </div>
           <div className="px-3.5 py-2 rounded-2xl bg-slate-900 text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs">
             <FileText className="w-4 h-4 text-emerald-400" />
-            <span>ทั้งหมด {grandTotal} รายการ</span>
+            <span>รวม {grandTotal}</span>
           </div>
         </div>
       </div>
@@ -420,60 +537,82 @@ export const StudentSubmissionsDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. Search and Status Filter Controls */}
+      {/* 3. Search, Status Filter & Quick Export Toolbar */}
       <div className="p-4 sm:p-5 bg-white rounded-3xl border border-slate-200 shadow-2xs space-y-3">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
           {/* Search Box */}
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="ค้นหาชื่อนักเรียน, username, หัวข้อคำถาม หรือเนื้อหาคำตอบ..."
-              className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:bg-white focus:border-emerald-500 transition-colors"
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:bg-white focus:border-emerald-500 transition-colors"
             />
           </div>
 
-          {/* Status Filter buttons (for Quiz, Worksheets, Journal) */}
-          {activeTab !== 'webboard' && (
-            <div className="flex items-center gap-1.5 shrink-0 bg-slate-100 p-1 rounded-xl text-xs">
-              <span className="text-slate-500 font-bold px-2 hidden sm:inline flex items-center gap-1">
-                <Filter className="w-3 h-3" />
-                สถานะ:
-              </span>
-              <button
-                onClick={() => setStatusFilter('all')}
-                className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
-                  statusFilter === 'all'
-                    ? 'bg-white text-slate-900 shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                ทั้งหมด
-              </button>
-              <button
-                onClick={() => setStatusFilter('pending')}
-                className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
-                  statusFilter === 'pending'
-                    ? 'bg-amber-600 text-white shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                รอตรวจ
-              </button>
-              <button
-                onClick={() => setStatusFilter('graded')}
-                className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
-                  statusFilter === 'graded'
-                    ? 'bg-emerald-600 text-white shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                ตรวจแล้ว
-              </button>
-            </div>
-          )}
+          {/* Quick Actions: Status Filter & CSV Export buttons */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Status Filter buttons (for Quiz, Worksheets, Journal) */}
+            {activeTab !== 'webboard' && (
+              <div className="flex items-center gap-1 shrink-0 bg-slate-100 p-1 rounded-xl text-xs">
+                <span className="text-slate-500 font-bold px-2 hidden sm:inline flex items-center gap-1">
+                  <Filter className="w-3 h-3" />
+                  สถานะ:
+                </span>
+                <button
+                  onClick={() => setStatusFilter('all')}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                    statusFilter === 'all'
+                      ? 'bg-white text-slate-900 shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  ทั้งหมด
+                </button>
+                <button
+                  onClick={() => setStatusFilter('pending')}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                    statusFilter === 'pending'
+                      ? 'bg-amber-600 text-white shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  รอตรวจ
+                </button>
+                <button
+                  onClick={() => setStatusFilter('graded')}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                    statusFilter === 'graded'
+                      ? 'bg-emerald-600 text-white shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  ตรวจแล้ว
+                </button>
+              </div>
+            )}
+
+            {/* Quick 1-click Download for Current Tab */}
+            <button
+              onClick={handleExportCurrentTab}
+              className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-900 font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              title={`ดาวน์โหลดคำตอบ ${getActiveTabTitle()} ในหน้านี้เป็นไฟล์ CSV`}
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700" />
+              <span>ดาวน์โหลด CSV {getActiveTabTitle()}</span>
+            </button>
+
+            {/* Open Export Modal */}
+            <button
+              onClick={() => setShowExportModal(true)}
+              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer border border-slate-200"
+              title="ตัวเลือกส่งออก CSV เพิ่มเติม"
+            >
+              <Download className="w-4 h-4 text-slate-600" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -483,7 +622,7 @@ export const StudentSubmissionsDashboard: React.FC = () => {
       {/* ========================================================================= */}
       {activeTab === 'quiz' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between pb-1">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-1 gap-2">
             <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
               <HelpCircle className="w-5 h-5 text-emerald-600" />
               <span>รายการส่งผลการทำ "ควิซ (Quiz)"</span>
@@ -491,6 +630,15 @@ export const StudentSubmissionsDashboard: React.FC = () => {
                 {filteredQuizzes.length} รายการ
               </span>
             </h3>
+
+            {/* Section CSV Export Button */}
+            <button
+              onClick={handleExportQuizOnly}
+              className="px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <FileDown className="w-3.5 h-3.5 text-emerald-600" />
+              <span>ส่งออกควิซทั้งหมด ({totalQuizzes} ชุด) เป็น CSV</span>
+            </button>
           </div>
 
           {filteredQuizzes.length === 0 ? (
@@ -621,7 +769,7 @@ export const StudentSubmissionsDashboard: React.FC = () => {
       {/* ========================================================================= */}
       {activeTab === 'worksheets' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between pb-1">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-1 gap-2">
             <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
               <FileText className="w-5 h-5 text-teal-600" />
               <span>รายการส่ง "ใบงาน (Worksheets)"</span>
@@ -629,6 +777,15 @@ export const StudentSubmissionsDashboard: React.FC = () => {
                 {filteredWorksheets.length} รายการ
               </span>
             </h3>
+
+            {/* Section CSV Export Button */}
+            <button
+              onClick={handleExportWorksheetsOnly}
+              className="px-3 py-1.5 rounded-xl bg-white hover:bg-teal-50 text-teal-800 border border-teal-200 text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <FileDown className="w-3.5 h-3.5 text-teal-600" />
+              <span>ส่งออกใบงานทั้งหมด ({totalWorksheets} ชุด) เป็น CSV</span>
+            </button>
           </div>
 
           {filteredWorksheets.length === 0 ? (
@@ -756,7 +913,7 @@ export const StudentSubmissionsDashboard: React.FC = () => {
       {/* ========================================================================= */}
       {activeTab === 'journals' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between pb-1">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-1 gap-2">
             <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-sky-600" />
               <span>รายการส่ง "สมุดอนุทินสะท้อนคิดดิจิทัล (Journal/Diary)"</span>
@@ -764,6 +921,15 @@ export const StudentSubmissionsDashboard: React.FC = () => {
                 {filteredJournals.length} รายการ
               </span>
             </h3>
+
+            {/* Section CSV Export Button */}
+            <button
+              onClick={handleExportJournalsOnly}
+              className="px-3 py-1.5 rounded-xl bg-white hover:bg-sky-50 text-sky-800 border border-sky-200 text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <FileDown className="w-3.5 h-3.5 text-sky-600" />
+              <span>ส่งออกสมุดอนุทินทั้งหมด ({totalJournals} บันทึก) เป็น CSV</span>
+            </button>
           </div>
 
           {filteredJournals.length === 0 ? (
@@ -911,7 +1077,7 @@ export const StudentSubmissionsDashboard: React.FC = () => {
       {/* ========================================================================= */}
       {activeTab === 'webboard' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between pb-1">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-1 gap-2">
             <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
               <MessageSquare className="w-5 h-5 text-indigo-600" />
               <span>รายการกระทู้และคำตอบใน "เว็บบอร์ด (Webboard Discussions)"</span>
@@ -919,6 +1085,15 @@ export const StudentSubmissionsDashboard: React.FC = () => {
                 {filteredForumTopics.length} กระทู้
               </span>
             </h3>
+
+            {/* Section CSV Export Button */}
+            <button
+              onClick={handleExportWebboardOnly}
+              className="px-3 py-1.5 rounded-xl bg-white hover:bg-indigo-50 text-indigo-800 border border-indigo-200 text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <FileDown className="w-3.5 h-3.5 text-indigo-600" />
+              <span>ส่งออกกระทู้เว็บบอร์ดทั้งหมด ({totalWebboard} กระทู้) เป็น CSV</span>
+            </button>
           </div>
 
           {filteredForumTopics.length === 0 ? (
@@ -1032,6 +1207,179 @@ export const StudentSubmissionsDashboard: React.FC = () => {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* EXPORT OPTIONS MODAL (ตัวเลือกการส่งออกไฟล์ CSV ทั้งหมด)                     */}
+      {/* ========================================================================= */}
+      {showExportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+          <div
+            className="relative w-full max-w-2xl bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden my-auto flex flex-col text-slate-800 animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="px-6 py-5 bg-gradient-to-r from-emerald-50 via-teal-50 to-sky-50 border-b border-emerald-100 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-md shadow-emerald-900/20">
+                  <FileSpreadsheet className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-lg text-slate-900">
+                    ส่งออกคำตอบนักเรียนเป็นไฟล์ CSV (Export Submissions)
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    ดาวน์โหลดคำตอบนักเรียนในรูปแบบไฟล์ CSV พร้อมรองรับภาษาไทยสำหรับ Excel สมบูรณ์
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowExportModal(false)}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-white rounded-full transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body: Options List */}
+            <div className="p-6 space-y-4">
+              <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200 text-xs text-emerald-950 flex items-center gap-2.5">
+                <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>
+                  ไฟล์ CSV มีการแนบ <strong>UTF-8 BOM</strong> ทำให้เปิดด้วย <strong>Microsoft Excel, Google Sheets, และ Apple Numbers</strong> ภาษาไทยจะไม่เป็นภาษาต่างดาว
+                </span>
+              </div>
+
+              {/* Master Combined Export */}
+              <div
+                onClick={handleExportMasterAll}
+                className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-700 to-sky-700 hover:from-emerald-700 hover:to-sky-800 text-white shadow-md shadow-emerald-950/20 cursor-pointer transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-between group"
+              >
+                <div className="space-y-1">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-emerald-100 text-[11px] font-bold">
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>รวมทุกประเภท (Master Combined CSV)</span>
+                  </div>
+                  <h4 className="font-extrabold text-base sm:text-lg">
+                    ส่งออกคำตอบทุกด้านรวมในไฟล์เดียว (All Responses CSV)
+                  </h4>
+                  <p className="text-xs text-emerald-100/90 leading-relaxed">
+                    รวมทั้ง ควิซ, ใบงาน, สมุดอนุทินสะท้อนคิด และเว็บบอร์ด ({grandTotal} รายการ)
+                  </p>
+                </div>
+
+                <div className="w-10 h-10 rounded-xl bg-white/20 group-hover:bg-white text-white group-hover:text-emerald-800 flex items-center justify-center shrink-0 transition-colors">
+                  <Download className="w-5 h-5" />
+                </div>
+              </div>
+
+              <div className="text-xs font-bold text-slate-400 uppercase tracking-wider pt-2">
+                เลือกส่งออกแยกตามหมวดหมู่ (Export by Category):
+              </div>
+
+              {/* 4 Individual Category Options */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* 1. Quiz Option */}
+                <div
+                  onClick={handleExportQuizOnly}
+                  className="p-4 rounded-2xl border border-slate-200 hover:border-emerald-400 hover:bg-emerald-50/40 transition-all cursor-pointer shadow-2xs group flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+                      <HelpCircle className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-extrabold text-sm text-slate-900 group-hover:text-emerald-800">
+                        1. ควิซ (Quiz CSV)
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        {totalQuizzes} ชุด • คำตอบและคะแนนรายข้อ
+                      </div>
+                    </div>
+                  </div>
+                  <Download className="w-4 h-4 text-slate-400 group-hover:text-emerald-700" />
+                </div>
+
+                {/* 2. Worksheets Option */}
+                <div
+                  onClick={handleExportWorksheetsOnly}
+                  className="p-4 rounded-2xl border border-slate-200 hover:border-teal-400 hover:bg-teal-50/40 transition-all cursor-pointer shadow-2xs group flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center font-bold">
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-extrabold text-sm text-slate-900 group-hover:text-teal-800">
+                        2. ใบงาน (Worksheets CSV)
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        {totalWorksheets} ชุด • คำตอบและคะแนนครู
+                      </div>
+                    </div>
+                  </div>
+                  <Download className="w-4 h-4 text-slate-400 group-hover:text-teal-700" />
+                </div>
+
+                {/* 3. Journals Option */}
+                <div
+                  onClick={handleExportJournalsOnly}
+                  className="p-4 rounded-2xl border border-slate-200 hover:border-sky-400 hover:bg-sky-50/40 transition-all cursor-pointer shadow-2xs group flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-sky-100 text-sky-800 flex items-center justify-center font-bold">
+                      <BookOpen className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-extrabold text-sm text-slate-900 group-hover:text-sky-800">
+                        3. สมุดอนุทิน (Journals CSV)
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        {totalJournals} บันทึก • ครบ 4 มิติสะท้อนคิด
+                      </div>
+                    </div>
+                  </div>
+                  <Download className="w-4 h-4 text-slate-400 group-hover:text-sky-700" />
+                </div>
+
+                {/* 4. Webboard Option */}
+                <div
+                  onClick={handleExportWebboardOnly}
+                  className="p-4 rounded-2xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/40 transition-all cursor-pointer shadow-2xs group flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-800 flex items-center justify-center font-bold">
+                      <MessageSquare className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-extrabold text-sm text-slate-900 group-hover:text-indigo-800">
+                        4. เว็บบอร์ด (Webboard CSV)
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        {totalWebboard} กระทู้ • เนื้อหาและความเห็น
+                      </div>
+                    </div>
+                  </div>
+                  <Download className="w-4 h-4 text-slate-400 group-hover:text-indigo-700" />
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+              <span className="text-xs text-slate-500">
+                พร้อมใช้งานสำหรับบทเรียนสาระภูมิศาสตร์ ม.ปลาย
+              </span>
+              <button
+                onClick={() => setShowExportModal(false)}
+                className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+              >
+                ปิดหน้าต่าง
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
